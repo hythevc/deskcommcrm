@@ -1,0 +1,41 @@
+CREATE EXTENSION
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+=== EMPTY DB: Q1 ===
+ received_at | evento | status | org_que_recebeu | conta_da_sessao | conta_do_evento | org_dona_da_conta_do_evento | entre_organizacoes 
+-------------+--------+--------+-----------------+-----------------+-----------------+-----------------------------+--------------------
+(0 rows)
+
+=== EMPTY DB: Q2 ===
+ external_id | orgs | linhas | primeira | ultima 
+-------------+------+--------+----------+--------
+(0 rows)
+
+=== EMPTY DB: Q3 ===
+ provider_conversation_id | orgs | count 
+--------------------------+------+-------
+(0 rows)
+
+INSERT 0 2
+INSERT 0 1
+INSERT 0 2
+INSERT 0 2
+=== SYNTHETIC CONTROL: Q1 (espera 1 linha, entre_organizacoes=true) ===
+      evento      |  status   |           org_que_recebeu            | conta_da_sessao | conta_do_evento |     org_dona_da_conta_do_evento      | entre_organizacoes 
+------------------+-----------+--------------------------------------+-----------------+-----------------+--------------------------------------+--------------------
+ message.received | processed | aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa | acc_sintetica_a | acc_sintetica_b | bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb | t
+(1 row)
+
+=== SYNTHETIC CONTROL: Q2 (espera 1 grupo com 2 orgs) ===
+     external_id      |                                    orgs                                     | linhas 
+----------------------+-----------------------------------------------------------------------------+--------
+ msg_sintetica_vazada | {aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb} |      2
+(1 row)
+
+=== SYNTHETIC CONTROL: Q3 (espera 1 grupo com 2 orgs) ===
+ provider_conversation_id |                                    orgs                                     | count 
+--------------------------+-----------------------------------------------------------------------------+-------
+ conv_sintetica_vazada    | {aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb} |     2
+(1 row)
