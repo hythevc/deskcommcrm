@@ -90,6 +90,23 @@ export const CHANNEL_CAPABILITIES: Record<ProviderDeMensagem, ChannelCapabilitie
     costPerMessage: true,
     alteraMensagemEnviada: false,
   },
+  // OpenWA self-hosted: mesma família de AUTO-RESTRIÇÃO do WAHA (transporte
+  // não-oficial por navegador — quem pune o abuso é o WhatsApp, com banimento,
+  // não a API com código de erro). Sem WABA por trás: não existe definição
+  // aprovada para exigir ou gerir. `voiceNote` fica "opus-only" por PRUDÊNCIA,
+  // não por medição: a conversão deste serviço não foi medida nesta bancada, e
+  // a leitura conservadora é a que não promete conversão que talvez não haja.
+  openwa: {
+    freeformOutsideWindow: true,
+    requiresTemplates: false,
+    canManageTemplates: false,
+    banRisk: true,
+    minIntervalMs: null,
+    voiceNote: "opus-only",
+    groups: "full",
+    costPerMessage: false,
+    alteraMensagemEnviada: false,
+  },
   // Parceiro homologado pela Meta que espelha a Cloud API (recorte do #1130):
   // a WABA, a janela de 24h e o custo são da Meta. O parceiro muda o TRANSPORTE
   // (host, token), não o que o WhatsApp permite — então o perfil é o do canal
@@ -134,6 +151,8 @@ export const CHANNEL_PROVIDER_SOCIAL: ChannelProvider = "zernio_social";
 export const CHANNEL_PROVIDER_ZERNIO: ChannelProvider = "zernio";
 /** Parceiro que espelha a Cloud API — canal opcional da instalação, desligado por padrão. */
 export const CHANNEL_PROVIDER_DATAFY: ChannelProvider = "datafy";
+/** OpenWA self-hosted (serviço HTTP separado, `@open-wa/wa-automate` — canal não-oficial, opt-in). */
+export const CHANNEL_PROVIDER_OPENWA: ChannelProvider = "openwa";
 /** Chamada de voz WhatsApp (spec 18). Não transporta mensagem — ver abaixo. */
 export const CHANNEL_PROVIDER_WACALLS: ChannelProvider = "wacalls";
 
@@ -158,6 +177,7 @@ export const PROVIDERS_DE_MENSAGEM = [
   "zernio",
   "zernio_social",
   "datafy",
+  "openwa",
 ] as const satisfies readonly ProviderDeMensagem[];
 
 /**
