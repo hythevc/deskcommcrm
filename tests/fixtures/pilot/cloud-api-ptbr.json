@@ -1,0 +1,174 @@
+{
+  "provenance": "Synthetic contract fixture; no customer data or live Meta capture",
+  "organizationId": "00000000-0000-4000-8000-000000000001",
+  "phoneNumberId": "fixture-phone",
+  "inbound": {
+    "object": "whatsapp_business_account",
+    "entry": [
+      {
+        "id": "fixture-waba",
+        "changes": [
+          {
+            "field": "messages",
+            "value": {
+              "metadata": {
+                "phone_number_id": "fixture-phone"
+              },
+              "contacts": [
+                {
+                  "wa_id": "5511987654321",
+                  "profile": {
+                    "name": "Cliente de teste"
+                  }
+                }
+              ],
+              "messages": [
+                {
+                  "id": "wamid.fixture-inbound",
+                  "from": "5511987654321",
+                  "timestamp": "1785342028",
+                  "type": "text",
+                  "text": {
+                    "body": "Olá! Quero uma proposta, por favor."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "reply": "Olá! Recebemos seu pedido. Vamos preparar a proposta.",
+  "responses": [
+    {
+      "name": "accepted",
+      "status": 200,
+      "body": {
+        "messaging_product": "whatsapp",
+        "messages": [
+          {
+            "id": "wamid.fixture-reply"
+          }
+        ]
+      },
+      "externalId": "wamid.fixture-reply"
+    },
+    {
+      "name": "rejected",
+      "status": 400,
+      "body": {
+        "error": {
+          "code": 131009,
+          "message": "Invalid parameter",
+          "error_data": {
+            "details": "Invalid recipient"
+          }
+        }
+      },
+      "error": "meta_131009: Invalid recipient"
+    },
+    {
+      "name": "error-in-200",
+      "status": 200,
+      "body": {
+        "error": {
+          "code": 190,
+          "message": "Invalid token"
+        }
+      },
+      "error": "meta_190: Invalid token"
+    }
+  ],
+  "pipelines": [
+    {
+      "id": "pipeline-other-org",
+      "organization_id": "other-org",
+      "is_default": true,
+      "is_archived": false
+    },
+    {
+      "id": "pipeline-nondefault",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "is_default": false,
+      "is_archived": false
+    },
+    {
+      "id": "pipeline-archived",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "is_default": true,
+      "is_archived": true
+    },
+    {
+      "id": "pipeline-fixture",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "is_default": true,
+      "is_archived": false
+    }
+  ],
+  "stages": [
+    {
+      "id": "stage-other-pipeline",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "WRONG_PIPELINE",
+      "is_archived": false,
+      "is_won": false,
+      "is_lost": false,
+      "position": -4
+    },
+    {
+      "id": "stage-other-org",
+      "organization_id": "other-org",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": false,
+      "is_won": false,
+      "is_lost": false,
+      "position": -3
+    },
+    {
+      "id": "stage-archived",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": true,
+      "is_won": false,
+      "is_lost": false,
+      "position": -2
+    },
+    {
+      "id": "stage-won",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": false,
+      "is_won": true,
+      "is_lost": false,
+      "position": -1
+    },
+    {
+      "id": "stage-lost",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": false,
+      "is_won": false,
+      "is_lost": true,
+      "position": 0
+    },
+    {
+      "id": "stage-later",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": false,
+      "is_won": false,
+      "is_lost": false,
+      "position": 9
+    },
+    {
+      "id": "stage-fixture",
+      "organization_id": "00000000-0000-4000-8000-000000000001",
+      "pipeline_id": "pipeline-fixture",
+      "is_archived": false,
+      "is_won": false,
+      "is_lost": false,
+      "position": 1
+    }
+  ]
+}
