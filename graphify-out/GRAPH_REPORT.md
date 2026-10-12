@@ -50,14 +50,23 @@ python graphify-out/prepare_snapshot.py SOURCE_COMMIT
 node graphify-out/build_graph.cjs
 python graphify-out/detect_communities.py
 node graphify-out/validate_graph.cjs
+node graphify-out/dom-smoke.cjs
 ```
 
 The snapshot helper writes temporary source bodies only to ignored .prova/graphify/. NetworkX can be installed from the package registry into .prova/graphify/vendor. Supply the recorded source SHA, not the later graph commit, to reproduce this source boundary. Iteration order and clustering seed are fixed; dependency/runtime versions can still affect byte-for-byte community output. Static report/explorer generation is separate from extraction; their scope is documented here.
 
 ## Limits and publication
 
-This is a local evidence-first extractor, not a claim that an unavailable Graphify package ran. Its coverage is strongest for TypeScript/JavaScript syntax and literal references. It does not resolve dynamic imports, runtime calls, business semantics, SQL execution, source-language symbols outside its supported parser or all Markdown anchors. Heading labels retain section number/location to avoid copying names or incidental data.
+The original snapshot uses the local evidence-first extractor; it does not claim Graphify package AST or semantic extraction. Graphifyy 0.9.86 is now installed from pinned source `a5ba60ddf6293d9f380321965ecf1084391dcc2b`; its 94 installed Python files were verified against that source. Its coverage is strongest for TypeScript/JavaScript syntax and literal references. It does not resolve dynamic imports, runtime calls, business semantics, SQL execution, source-language symbols outside its supported parser or all Markdown anchors. Heading labels retain section number/location to avoid copying names or incidental data.
 
 Only graphify-out/ and the one-line AGENTS.md pointer are authorized for this commit/PR. graphify-out/ is normally ignored; this deliverable is explicitly force-added without changing .gitignore. Existing AGENTS.md references to normally absent graph output describe the default workflow; this bootstrap snapshot is the explicit exception. Pending earlier-slice files are preserved and excluded.
 
 Draft PR publication is authorized for this deliverable only. Independent different-family ACCEPT and exact-head CI remain pending; no merge or launch-readiness claim.
+
+## Offline explorer verification and publication hold
+
+The saved explorer passes eight DOM characterization checks for initial results, search, community filtering, reset, rendered community markers and script errors. A controlled broken-search fixture fails the search assertion, confirming the check detects that regression. Run `node graphify-out/dom-smoke.cjs` from the repository root with its installed jsdom dependency. This is DOM evidence, not real-browser or application-runtime proof.
+
+The real-browser check is `GRAPHIFY_CHROMIUM_PATH=/usr/bin/chromium node graphify-out/browser-smoke.cjs`. In this sandbox, the default Playwright browser executable is absent. The installed system browser launches, but managed policy blocks local file navigation with `net::ERR_BLOCKED_BY_ADMINISTRATOR`. Browser attempts stopped; no policy bypass or browser download was performed. The HTML artifact is unchanged.
+
+GitHub hold: no pushes, PR creation/edits or GitHub API polling until approximately **14:40 BST on 2026-10-12**. Publication remains deferred; any later authorized publication must use one batched commit/push, without bursts. This time is the earliest resume boundary, not proof that the remote rate limit has cleared. No remote status was queried during this local check.
