@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+Agents must read `graphify-out/GRAPH_REPORT.md` first, then `AGENTS.md`/`DESIGN.md` (when present).
+
 > Contrato portável para **qualquer** agente de código (Codex, Cursor, OpenCode, Antigravity, Copilot).
 > Este arquivo é o núcleo. A **doutrina completa e não-negociável vive em [`CLAUDE.md`](CLAUDE.md)** —
 > leia-o antes de tocar em código. O mapa de toda a documentação está em [`docs/index.md`](docs/index.md).
