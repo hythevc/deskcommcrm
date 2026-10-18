@@ -11,14 +11,21 @@ referencia_arquitetural: ARCHITECTURE.md, docs/project/TRD.md
 
 # DeskcommCRM — Clarify-parity PRD
 
-> Product requirements for three slices that close the top Clarify-parity gaps in the fork
-> `jaimedhenriques/deskcommcrm`: (1) call summary into the deal timeline, (2) the AI writes deal
-> stage and next step, (3) credits metering to a ledger. Authority: the CEO directive relayed on
-> 2026-10-12 and the lane decisions D1–D3 that implement it. Sibling docs in `docs/project/`:
+> Product requirements for three slices that close the top Clarify-parity gaps in the fork:
+> (1) call summary into the deal timeline, (2) the AI writes deal stage and next step, (3) credits
+> metering to a ledger. Authority: the CEO directive relayed on 2026-10-12 and the lane decisions
+> D1–D3 that implement it (override not confirmed; see the status note below). Sibling docs in
+> `docs/project/`:
 > `TRD.md` (how), `APP_FLOW.md` (screens and flows), `DESIGN_BRIEF.md` (UI and copy),
 > `BACKEND_SCHEMA.md` (tables, functions, migrations), `IMPLEMENTATION_PLAN.md` (tasks and order).
 > This PRD says **what** and **why**; where it touches a schema or a flow it names the requirement
 > and leaves the shape to those docs.
+
+> **Status: the doctrine override is not confirmed.** §6 records what the CEO directive would
+> override in upstream doctrine (no parity chasing without a paying customer, no billing before the
+> first paying operator, the retainer billing decision). That override is not confirmed while Jaime
+> is away, so slices 2 and 3 do not start until it is. Questions marked "pending … (held for
+> Jaime)" in these docs are held for the owner via main; no doc assumes an answer to them.
 
 ---
 
@@ -128,11 +135,13 @@ Branch `claude/deskcomm-call-summary`, migration `0443`.
   `evidence.llm_call_ids`. `runModelCall` returns the `callId` needed for that evidence
   (`lib/agent-engine/edge/llm/run-model-call.ts:787`, CONFIRMED).
 - Timeline rendering of the summary from `payload` in `components/kanban/LeadTimeline.tsx`, behind
-  the existing expand state (`abertos`, `:98`, CONFIRMED), with AI readings labelled as in
+  a per-row disclosure keyed by the activity id (`DESIGN_BRIEF.md` §4.3; the index-keyed `abertos`
+  set at `:98` is left as is, CONFIRMED), with AI readings labelled as in
   `lib/escalacao/briefing-da-passagem.ts:19-30` (CONFIRMED). `call_summarized` joins the
   never-collapse set in `lib/leads/timeline-grouping.ts:27` (CONFIRMED location).
-- LGPD: restore `transcript = null` in the redaction cascade, prove `call_summarized` payloads are
-  cleared, and add the transcript to the access export (§5.1).
+- LGPD: restore `transcript = null` in the redaction cascade, clear once the transcripts of
+  contacts anonymized before the fix, prove `call_summarized` payloads are cleared, and add the
+  transcript and the `call_summarized` summary to the access export (§5.1).
 - Proof with a fictional transcript fixture under `tests/fixtures/calls/` and a scripted model
   provider; no paid model call.
 
@@ -146,8 +155,10 @@ Branch `claude/deskcomm-ai-deal-updates`, migration `0444`.
 **In:**
 
 - The stage path stays single: `update_lead_state` → `applyLeadStateUpdate` →
-  `mirrorLeadStageToCrm` → `sincronizaEstagioDoAgente`. The mirror receives the agent id and the
-  turn's `llm_call_ids`, so the `stage_changed` row is actor `ai`; the payload carries
+  `mirrorLeadStageToCrm` → `sincronizaEstagioDoAgente`. The mirror receives the agent id, and the
+  `stage_changed` row carries evidence of the kind decided under `TRD.md` §7 Q1 (§10 Q15; D2 names
+  the turn's `llm_call_ids`, which exist only after `runModelCall` returns, TRD §5.5), so the row
+  is actor `ai`; the payload carries
   `from_stage_id` and `to_stage_id`, which is what the human-correction check reads
   (`app/api/v1/leads/_handler.ts:1119-1150`, CONFIRMED). That check runs only inside
   `moveLeadHandler` (MCP tool and automations), not on the board drag or bulk routes (CONFIRMED;
@@ -178,10 +189,11 @@ Branch `claude/deskcomm-credit-ledger`, migration `0445`.
   name is `credit_ledger`, not `credits`, so the measuring grep in
   `docs/doctrine/operacao-de-agentes.md:105-107` keeps its meaning.
 - Metering hook: an AFTER INSERT trigger on `llm_calls` that debits only `status = 'ok'` rows with a
-  non-null cost. Unpriced calls are counted and surfaced, never debited as zero.
+  non-null, positive cost; what a cost of exactly zero writes is pending §10 Q2 (held for Jaime).
+  Unpriced calls are counted and surfaced, never debited as zero.
 - Balance: `fn_saldo_de_creditos`, a sum computed in the database, `service_role` only.
 - Grants and adjustments: an admin route (role admin, support-write guard, Zod, `Idempotency-Key`,
-  audit codes appended).
+  audit codes appended). The request body shape is pending §10 Q16 (held for Jaime).
 - Metering only. Nothing is blocked by the balance.
 
 **Out:** price per credit, purchase, payment provider, invoices, plans, enforcement, backfill of
@@ -254,15 +266,19 @@ same PR as the summary.
 
 1. **CALL-09** WHEN `fn_lgpd_cascade_redact_contact` runs for a contact THEN it SHALL set
    `voice_calls.transcript` to null for that contact's calls and SHALL clear `payload` of that
-   contact's `call_summarized` rows.
-2. **CALL-10** WHEN an access export runs for a contact THEN the `voice_calls` section SHALL
-   include `transcript`.
+   contact's `call_summarized` rows. WHEN migration 0443 is applied THEN it SHALL also null, once
+   and re-runnably, the transcripts of contacts already anonymized, because the cascade returns
+   early for them (`supabase/baseline.sql:35162-35164`, CONFIRMED; repair in `BACKEND_SCHEMA.md`
+   §4 item 2, its acceptance open as `BACKEND_SCHEMA.md` §10 Q7).
+2. **CALL-10** WHEN an access export runs for a contact THEN the export SHALL include
+   `voice_calls.transcript` and the `call_summarized` summary payload.
 3. **CALL-11** WHEN the handler runs for a call whose transcript is null or empty (including after
    redaction) THEN it SHALL make no model call and write no activity.
 
 **Independent Test:** On `pnpm test:db`, seed a call with a transcript and a `call_summarized` row,
-run the cascade, assert `transcript is null` and `payload = '{}'`. A unit test on
-`lib/lgpd/export-collector.ts` asserts `transcript` is selected.
+run the cascade, assert `transcript is null` and `payload = '{}'`; a contact anonymized before the
+0443 block was applied has `transcript is null` after it. A unit test on
+`lib/lgpd/export-collector.ts` asserts `transcript` and the `call_summarized` payload are exported.
 
 #### P2: WhatsApp calls stay unrecorded
 
@@ -309,7 +325,8 @@ detected. Without this, "AI writes the stage" is unauditable.
 
 1. **DEAL-01** WHEN the agent calls `update_lead_state` with a valid next stage and the mirror moves
    the card THEN the `stage_changed` row SHALL have `actor_kind = 'ai'`, `actor_agent_id` = the
-   agent, and `evidence.llm_call_ids` from the turn.
+   agent, and evidence accepted by `crm_lead_activities_ai_needs_evidence` of the kind decided
+   under `TRD.md` §7 Q1 (§10 Q15; D2: `llm_call_ids`).
 2. **DEAL-02** WHEN the mirror writes `stage_changed` THEN `payload` SHALL contain
    `from_stage_id` and `to_stage_id` (keeping `passo_do_agente`), and WHEN a human moves the card
    back through `moveLeadHandler`, or through `/api/v1/leads/[id]/move` or `/api/v1/leads/bulk` if
@@ -348,7 +365,8 @@ contact and waits for approval (G4).
 1. **DEAL-05** WHEN `update_lead_state` carries a non-empty `next_action` and the contact routes to
    exactly one active deal THEN the system SHALL write it to that deal's `crm_leads.next_step`, set
    `next_step_updated_at`, and write one `next_step_set` activity with `actor_kind = 'ai'` and
-   evidence.
+   evidence accepted by `crm_lead_activities_ai_needs_evidence` of the kind decided under
+   `TRD.md` §7 Q1 (§10 Q15; D2: `llm_call_ids`).
 2. **DEAL-06** WHEN the contact has no active deal or more than one THEN the system SHALL write
    `next_step` on no deal.
 3. **DEAL-07** WHEN a human edits `next_step` on the deal THEN the system SHALL save it and record a
@@ -372,8 +390,9 @@ a scripted provider is the closest repeatable proof, and DoD 12 adds the screen 
 
 1. **DEAL-09** WHEN the fixture conversation is replayed through `createInboundTurnHandler` with a
    scripted provider and `tests/pg-como-supabase.ts` as the CRM client THEN the deal's `stage_id`,
-   `next_step`, and the `stage_changed` and `next_step_set` rows (actor `ai`, with evidence) SHALL
-   match the fixture's expected values.
+   `next_step`, and the `stage_changed` and `next_step_set` rows (actor `ai`, with evidence
+   accepted by `crm_lead_activities_ai_needs_evidence` of the kind decided under `TRD.md` §7 Q1;
+   D2: `llm_call_ids`) SHALL match the fixture's expected values.
 2. **DEAL-10** WHEN the same raw text is checked through the UI path and through a direct call of
    the stage and next-step functions THEN both SHALL agree, per `docs/doctrine/prova-em-par.md`.
 
@@ -467,7 +486,8 @@ database, which the lane forbids on live systems.
 1. **CRED-12** WHEN an admin posts a grant or adjustment with an `Idempotency-Key` THEN the route
    SHALL require role admin, pass the support-write guard before any effect, validate the body with
    Zod, write one `credit_ledger` row, and emit an audit code appended at the end of
-   `lib/audit/actions.ts`.
+   `lib/audit/actions.ts`. The body shape (how it carries the kind and the sign of an adjustment)
+   is pending §10 Q16 (held for Jaime).
 2. **CRED-13** WHEN the same `Idempotency-Key` is replayed THEN no second row SHALL be written.
 3. **CRED-14** WHEN a non-admin calls the route THEN it SHALL be refused with no row and no audit
    of an effect.
@@ -477,7 +497,8 @@ database, which the lane forbids on live systems.
 
 #### Edge cases (slice 3)
 
-- WHEN `cost_cents = 0` THEN whether a zero-delta row is written is undecided (§10, Q2).
+- WHEN `cost_cents = 0` THEN whether a zero-delta row is written or the call is skipped is pending
+  §10 Q2 (held for Jaime); no sibling doc assumes either.
 - WHEN a legacy writer records an unknown model THEN `lib/ai/cost.ts:118` returns `0`, not null
   (CONFIRMED), so the call is metered as zero cost rather than unpriced; tests and docs SHALL state
   this under-count.
@@ -498,7 +519,7 @@ database, which the lane forbids on live systems.
 | CALL-07 | Visible, expandable, labelled in timeline    | 1     | Planned |
 | CALL-08 | `reason` free of customer content            | 1     | Planned |
 | CALL-09 | Redaction clears transcript and summary      | 1     | Planned |
-| CALL-10 | Export includes transcript                   | 1     | Planned |
+| CALL-10 | Export includes transcript and summary       | 1     | Planned |
 | CALL-11 | No model call on empty transcript            | 1     | Planned |
 | CALL-12 | WhatsApp calls stay unrecorded               | 1     | Planned |
 | DEAL-01 | AI stage move attributed `ai` with evidence  | 2     | Planned |
@@ -537,7 +558,8 @@ tasks.
 - [ ] **Slice 2:** repro test showing today's `system` attribution, then the replay asserting actor
       `ai`, `next_step` and correction detection; paired proof per `prova-em-par.md`.
 - [ ] **Slice 3:** ledger invariants (debit, idempotency, null cost, append-only under default ACL,
-      RLS isolation) and conversion unit tests green; `orcamento-uma-regua-de-gasto` green.
+      RLS isolation) and conversion unit tests green; `orcamento-uma-regua-de-gasto` green. Any
+      screen proof is pending §10 Q4 (held for Jaime).
 - [ ] **Every slice:** draft PR only, `.changes/` fragment, destination declared (DoD 18), CI
       checks read from the fork, verification by a fresh agent on a different model family pinned to
       one commit; the maker never merges.
@@ -557,7 +579,8 @@ tasks.
   the contact's `crm_lead_activities` (`:35245-35252`, CONFIRMED). Slice 1 adds a test that this
   covers `call_summarized`.
 - **Access export.** `lib/lgpd/export-collector.ts:1046-1049` selects `voice_calls` without
-  `transcript` (CONFIRMED). Slice 1 adds it.
+  `transcript` (CONFIRMED), and activities are exported without `payload` (`:921-922`). Slice 1
+  adds the transcript and the `call_summarized` summary (CALL-10).
 - **`reason` stays PII-free.** It is shown on screen through `t()` (`LeadTimeline.tsx:79`,
   CONFIRMED). Summaries go in `payload` only.
 - **Consent.** WhatsApp call recording stays off (spec 18 §1.2 item 2). No consent announcement was
@@ -607,7 +630,7 @@ tasks.
   `lib/ui/icons.ts`, no `Sparkle` for AI (`docs/design-system/09-anti-patterns.md` §6). Details in
   `DESIGN_BRIEF.md`.
 - Any new screen is declared in `lib/navigation/catalogo.ts` (DoD 14). Slices 1 and 2 add no screen;
-  slice 3's surface is an open decision (§10, Q4).
+  slice 3's surface is pending §10 Q4 (held for Jaime).
 - No performance number is set here. The summary runs asynchronously off the call path; the
   metering trigger adds one insert inside the `llm_calls` transaction and makes no HTTP call.
 
@@ -615,13 +638,15 @@ tasks.
 
 ## 6. Doctrine divergence
 
-The CEO directive rules for this fork. The upstream rules it overrides are quoted below verbatim
-(pt-BR, as the repo has them), with what is overridden, what is kept, and how each slice stays
-inside the rest of the doctrine. No upstream doctrine file is edited to hide a divergence.
+The CEO directive would rule for this fork once its override is confirmed; it is not confirmed
+while Jaime is away, and slices 2 and 3 do not start until it is (status note at the top). The
+upstream rules it would override are quoted below verbatim (pt-BR, as the repo has them), with what
+would be overridden, what is kept, and how each slice stays inside the rest of the doctrine. No
+upstream doctrine file is edited to hide a divergence.
 
 ### 6.1 The rules and what the directive does to each
 
-| Rule (quoted)                                                                                                                                                                                                                                                                                                  | Source                                                         | Effect of the directive                                                                                                                                                                                                                                                                       |
+| Rule (quoted)                                                                                                                                                                                                                                                                                                  | Source                                                         | Effect of the directive, once confirmed                                                                                                                                                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | "**Não caçar paridade de funcionalidade sem cliente que a pague.** Campanhas com template oficial e canais adicionais entram quando um cliente pagante os pedir, não antes."                                                                                                                                   | `docs/doctrine/operacao-de-agentes.md:123-124` (§4 item 6)     | **Overridden for the whole lane.** The directive asks for Clarify parity before a paying customer asks for it. Limited to three slices, each built on substrate that already exists (§2); no new channel, no campaign work.                                                                   |
 | "**Não construir faturamento antes do primeiro operador que paga.** Sem cliente pagante, o desenho do medidor é adivinhação."                                                                                                                                                                                  | `docs/doctrine/operacao-de-agentes.md:117-118` (§4 item 2)     | **Overridden in part (slice 3).** The lane builds the meter, which is exactly what the rule calls a guess. It does not build invoices, plans, payment or enforcement. The meter design is declared provisional until a paying operator validates it.                                          |
@@ -636,17 +661,17 @@ met; the directive overrides it the same way as §4 item 6.
 
 ### 6.2 How each slice stays inside the rest of the doctrine
 
-| Doctrine                                                                                                  | Slice 1 (call summary)                                                                    | Slice 2 (AI deal updates)                                                                                                                                                                                                    | Slice 3 (credits)                                                                       |
-| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `docs/doctrine/sistema-vivo.md` invariants 1 and 3 (two connections; visible log)                         | Input: the stored transcript. Output: a timeline row on the deal                          | Input: the turn. Output: card stage, `next_step`, two timeline rows                                                                                                                                                          | Input: `llm_calls`. Output: ledger and balance; the on-screen surface is open (§10, Q4) |
-| `sistema-vivo.md` invariant 2 (AI↔human continuity)                                                       | Operator reads what the AI heard                                                          | Human can edit `next_step` and move the card back; both are recorded                                                                                                                                                         | Admin grant/adjust is the human side of the meter                                       |
-| `sistema-vivo.md` invariant 6 (every configuration has a surface)                                         | No new configuration                                                                      | Stage mapping has a settings screen (`app/app/settings/tenant/pipelines/_mapping.tsx`); pipeline scope is set on the agent form (`app/app/ai/agents/[id]/_components/AgentForm.tsx` reads `pipeline_ids`, CONFIRMED by grep) | Grants have an API but no screen yet: open (§10, Q4)                                    |
-| `sistema-vivo.md` invariant 7 and the time rule (`:83-87`: never faster than a human can interrupt)       | Summary is read-only text; nothing acts on it automatically                               | Card moves and `next_step` are reversible; loss stays human (`perda_sem_motivo`); an undo becomes a correction signal (DEAL-02)                                                                                              | Metering only; nothing is blocked (CRED-06)                                             |
-| `docs/specs/17-spec-conversa-vira-lead.md` §4b ("O Operador PROPÕE; um humano CONFIRMA" for contact data) | Writes no contact field                                                                   | Writes deal fields only (`stage_id`, `next_step`), never contact data                                                                                                                                                        | Not applicable                                                                          |
-| `docs/doctrine/prova-em-par.md` (DoD 12 amendment)                                                        | The summariser is not an agent turn; screen proof plus handler test                       | Paired proof required (DEAL-10)                                                                                                                                                                                              | No agent in the path                                                                    |
-| CLAUDE.md DoD 11 (migration + baseline appendix + MANIFEST)                                               | `0443`                                                                                    | `0444`                                                                                                                                                                                                                       | `0445`                                                                                  |
-| CLAUDE.md DoD 13 (architecture map with at least two edges)                                               | No voice-call map exists in `docs/architecture/` (CONFIRMED by listing); slice 1 adds one | Extend `docs/architecture/crm-vivo.architecture.json`                                                                                                                                                                        | Extend the budget map (`docs/architecture/teto-de-orcamento.architecture.json`)         |
-| CLAUDE.md DoD 17 and 18 (`.changes/` fragment; core vs extension)                                         | Fragment required; destination open (§10, Q10)                                            | Fragment required; destination open (§10, Q10)                                                                                                                                                                               | Fragment required; destination open (§10, Q10)                                          |
+| Doctrine                                                                                                  | Slice 1 (call summary)                                                                    | Slice 2 (AI deal updates)                                                                                                                                                                                                    | Slice 3 (credits)                                                                                        |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `docs/doctrine/sistema-vivo.md` invariants 1 and 3 (two connections; visible log)                         | Input: the stored transcript. Output: a timeline row on the deal                          | Input: the turn. Output: card stage, `next_step`, two timeline rows                                                                                                                                                          | Input: `llm_calls`. Output: ledger and balance; the on-screen surface is pending §10 Q4 (held for Jaime) |
+| `sistema-vivo.md` invariant 2 (AI↔human continuity)                                                       | Operator reads what the AI heard                                                          | Human can edit `next_step` and move the card back; both are recorded                                                                                                                                                         | Admin grant/adjust is the human side of the meter                                                        |
+| `sistema-vivo.md` invariant 6 (every configuration has a surface)                                         | No new configuration                                                                      | Stage mapping has a settings screen (`app/app/settings/tenant/pipelines/_mapping.tsx`); pipeline scope is set on the agent form (`app/app/ai/agents/[id]/_components/AgentForm.tsx` reads `pipeline_ids`, CONFIRMED by grep) | Grants have an API but no screen yet: pending §10 Q4 (held for Jaime)                                    |
+| `sistema-vivo.md` invariant 7 and the time rule (`:83-87`: never faster than a human can interrupt)       | Summary is read-only text; nothing acts on it automatically                               | Card moves and `next_step` are reversible; loss stays human (`perda_sem_motivo`); an undo becomes a correction signal (DEAL-02)                                                                                              | Metering only; nothing is blocked (CRED-06)                                                              |
+| `docs/specs/17-spec-conversa-vira-lead.md` §4b ("O Operador PROPÕE; um humano CONFIRMA" for contact data) | Writes no contact field                                                                   | Writes deal fields only (`stage_id`, `next_step`), never contact data                                                                                                                                                        | Not applicable                                                                                           |
+| `docs/doctrine/prova-em-par.md` (DoD 12 amendment)                                                        | The summariser is not an agent turn; screen proof plus handler test                       | Paired proof required (DEAL-10)                                                                                                                                                                                              | No agent in the path                                                                                     |
+| CLAUDE.md DoD 11 (migration + baseline appendix + MANIFEST)                                               | `0443`                                                                                    | `0444`                                                                                                                                                                                                                       | `0445`                                                                                                   |
+| CLAUDE.md DoD 13 (architecture map with at least two edges)                                               | No voice-call map exists in `docs/architecture/` (CONFIRMED by listing); slice 1 adds one | Extend `docs/architecture/crm-vivo.architecture.json`                                                                                                                                                                        | Extend the budget map (`docs/architecture/teto-de-orcamento.architecture.json`)                          |
+| CLAUDE.md DoD 17 and 18 (`.changes/` fragment; core vs extension)                                         | Fragment required; destination open (§10, Q10)                                            | Fragment required; destination open (§10, Q10)                                                                                                                                                                               | Fragment required; destination open (§10, Q10)                                                           |
 
 ---
 
@@ -675,7 +700,7 @@ met; the directive overrides it the same way as §4 item 6.
 | R2  | A summary is a paraphrase of customer words and a prompt-injection surface                                                                                                                                                                                               | 1     | No tools in the summariser; output only in `payload`; "segundo a IA — confira" label; Zod schema                       |
 | R3  | SIP transcripts are captured with no consent step found (INFERRED)                                                                                                                                                                                                       | 1     | Not widened by this slice; erasure and export fixed; consent design open (§10, Q6)                                     |
 | R4  | AI rows silently become `system` when evidence is missing (`buildLeadActivityRow` demotes, `lib/leads/activity-emitter.ts:93`, CONFIRMED), so a row "written by the AI" can pass a test that only checks existence                                                       | 1, 2  | Tests assert `actor_kind = 'ai'`                                                                                       |
-| R5  | Timeline grouping folds AI rows: the never-collapse set's stated criterion is "contêm decisão humana, não relato" (`lib/leads/timeline-grouping.ts:26`, CONFIRMED); adding `call_summarized` widens it, and AI stage moves would fold with the same turn's `ai_turn` row | 1, 2  | Slice 1 updates the comment to the widened criterion; slice 2 decides set membership or a visibility test (§10, Q9)    |
+| R5  | Timeline grouping folds AI rows: the never-collapse set's stated criterion is "contêm decisão humana, não relato" (`lib/leads/timeline-grouping.ts:26`, CONFIRMED); adding `call_summarized` widens it, and AI stage moves would fold with the same turn's `ai_turn` row | 1, 2  | Slice 1 updates the comment to the widened criterion; slice 2 follows the §10 Q9 lane default (TRD §5.4)               |
 | R6  | The correction loop may already be dead for AI moves: spec 17 §7 step 5 marks it ✅, but the mirror writes `system` and `de`/`para` (INFERRED mismatch)                                                                                                                  | 2     | Repro test first (DEAL-01 independent test), then the fix                                                              |
 | R7  | Stage moves depend on tenant mapping and scope; an unmapped tenant sees nothing happen                                                                                                                                                                                   | 2     | Fixture seeds mapping; `not_configured` stays visible as today                                                         |
 | R8  | Per-call ceiling makes any priced call cost at least one credit, however small its `cost_cents`                                                                                                                                                                          | 3     | Rule isolated in one constant; owner confirmation (§10, Q1)                                                            |
@@ -713,23 +738,29 @@ met; the directive overrides it the same way as §4 item 6.
 ## 10. Decisions deferred
 
 Questions this PRD could not close. "Lane default" is what the slices do until someone with
-authority answers; "none" means the slice must not ship that behaviour until answered.
+authority answers; "none" means the slice must not ship that behaviour until answered. "Pending
+(held for Jaime)" means the question is held for the owner via main: no doc in `docs/project/`
+assumes an answer, sibling docs cite the question id instead of a default, and the slice does not
+ship that behaviour until it is answered.
 
-| #   | Question                                                                                                                                                                                                                                         | Lane default                                           | Who decides         |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | ------------------- |
-| Q1  | Confirm the credit unit: 1 credit = 1 US cent of recorded provider cost, rounded up per call? Or accumulate fractions and round on the balance?                                                                                                  | Per-call ceiling, in one named constant (D3)           | Product owner       |
-| Q2  | For `cost_cents = 0`, write a zero-delta debit row or skip?                                                                                                                                                                                      | None                                                   | Lane, then owner    |
-| Q3  | Backfill historical `llm_calls` into the ledger?                                                                                                                                                                                                 | No backfill                                            | Product owner       |
-| Q4  | Where do the balance and the unpriced count appear on screen (`/app/ai/usage`, `lib/navigation/catalogo.ts:569`, or the billing placeholder at `:851`)? Without a screen, slice 3 misses sistema-vivo invariant 6 and DoD 13's "aparece na tela" | None — API and DB only                                 | Product owner, lane |
-| Q5  | Will a credit balance ever block or degrade AI usage, and how does that square with `VISION.md:61`?                                                                                                                                              | Never in this lane                                     | Product owner       |
-| Q6  | Consent design for voice: WhatsApp call recording (spec 18 §1.2 item 2) and the SIP transcript already captured without a consent step found                                                                                                     | Recording off; SIP unchanged                           | Product owner, DPO  |
-| Q7  | Slice 1 edits `finalizeAudioSocketCall`; does it also add the `organization_id` filter to its UPDATE (`workers/voice-agent/index.ts:218-228`)?                                                                                                   | Recommended yes, as part of slice 1                    | Lane                |
-| Q8  | When `update_lead_state` sends a null or empty `next_action`, is `crm_leads.next_step` cleared or kept?                                                                                                                                          | Kept (no write)                                        | Lane, then owner    |
-| Q9  | AI stage moves and `next_step_set` on the timeline: join the never-collapse set, or prove they stay visible inside the expanded group?                                                                                                           | None                                                   | Lane (with design)  |
-| Q10 | DoD 18 destination for each slice: core, extension, both or infrastructure?                                                                                                                                                                      | None                                                   | Lane                |
-| Q11 | Fix the `messages.media_derived_text` erasure gap in its own PR now, or record it as known debt?                                                                                                                                                 | Recorded here only                                     | Lane, DPO           |
-| Q12 | Re-verify the Clarify column (§2) against Clarify's public pages before any public comparison                                                                                                                                                    | Treat as INFERRED                                      | Lane                |
-| Q13 | Business rule B-01 names `usage_events`; does `credit_ledger` satisfy it, or does B-01 stay open?                                                                                                                                                | B-01 stays open; `credit_ledger` covers LLM calls only | Product owner       |
+| #   | Question                                                                                                                                                                                                                                                                                                                                  | Lane default                                                                                                                              | Who decides        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Q1  | Confirm the credit unit: 1 credit = 1 US cent of recorded provider cost, rounded up per call? Or accumulate fractions and round on the balance?                                                                                                                                                                                           | Per-call ceiling, in one named constant (D3)                                                                                              | Product owner      |
+| Q2  | For `cost_cents = 0`, write a zero-delta debit row or skip?                                                                                                                                                                                                                                                                               | Pending (held for Jaime)                                                                                                                  | Product owner      |
+| Q3  | Backfill historical `llm_calls` into the ledger?                                                                                                                                                                                                                                                                                          | No backfill                                                                                                                               | Product owner      |
+| Q4  | Where do the balance and the unpriced count appear on screen (`/app/ai/usage`, `lib/navigation/catalogo.ts:569`, or the billing placeholder at `:851`), and is there a ledger-history read for a history table (`DESIGN_BRIEF.md` §6.2, §12 Q6)? Without a screen, slice 3 misses sistema-vivo invariant 6 and DoD 13's "aparece na tela" | Pending (held for Jaime); no screen and no history read are built until answered                                                          | Product owner      |
+| Q5  | Will a credit balance ever block or degrade AI usage, and how does that square with `VISION.md:61`?                                                                                                                                                                                                                                       | Never in this lane                                                                                                                        | Product owner      |
+| Q6  | Consent design for voice: WhatsApp call recording (spec 18 §1.2 item 2) and the SIP transcript already captured without a consent step found                                                                                                                                                                                              | Recording off; SIP unchanged                                                                                                              | Product owner, DPO |
+| Q7  | Slice 1 edits `finalizeAudioSocketCall`; does it also add the `organization_id` filter to its UPDATE (`workers/voice-agent/index.ts:218-228`)?                                                                                                                                                                                            | Recommended yes, as part of slice 1                                                                                                       | Lane               |
+| Q8  | When `update_lead_state` sends a null or empty `next_action`, is `crm_leads.next_step` cleared or kept?                                                                                                                                                                                                                                   | Kept (no write)                                                                                                                           | Lane, then owner   |
+| Q9  | AI stage moves and `next_step_set` on the timeline: join the never-collapse set, or prove they stay visible inside the expanded group?                                                                                                                                                                                                    | `next_step_set` never collapses; an AI `stage_changed` may fold with the turn's `ai_turn` and is proven reachable by expanding (TRD §5.4) | Lane (with design) |
+| Q10 | DoD 18 destination for each slice: core, extension, both or infrastructure?                                                                                                                                                                                                                                                               | None                                                                                                                                      | Lane               |
+| Q11 | Fix the `messages.media_derived_text` erasure gap in its own PR now, or record it as known debt?                                                                                                                                                                                                                                          | Recorded here only                                                                                                                        | Lane, DPO          |
+| Q12 | Re-verify the Clarify column (§2) against Clarify's public pages before any public comparison                                                                                                                                                                                                                                             | Treat as INFERRED                                                                                                                         | Lane               |
+| Q13 | Business rule B-01 names `usage_events`; does `credit_ledger` satisfy it, or does B-01 stay open?                                                                                                                                                                                                                                         | B-01 stays open; `credit_ledger` covers LLM calls only                                                                                    | Product owner      |
+| Q14 | Run the human-correction check also on `/api/v1/leads/[id]/move` (board drag) and `/api/v1/leads/bulk` (inbox select, bulk move), so a person undoing an AI move by screen writes `agent_move_corrected` (`APP_FLOW.md` §8 A6, `IMPLEMENTATION_PLAN.md` T15)?                                                                             | Recommended in scope of slice 2; not decided by D2                                                                                        | Lane               |
+| Q15 | Evidence kind for the AI `stage_changed` and `next_step_set` rows (`TRD.md` §7 Q1): the turn's call id does not exist when the tool runs (TRD §5.5). Write both rows after `runModelCall` returns its `callId`, or amend D2 to accept `trace_ids: [job_id]`?                                                                              | D2: `llm_call_ids`, both rows written after `runModelCall` returns (TRD §5.5); `trace_ids` is a proposed amendment                        | Lane authority     |
+| Q16 | Body shape of the grant and adjustment route (CRED-12): how does it carry the kind and, for an adjustment, the sign (`TRD.md` §6.2, `DESIGN_BRIEF.md` §12 Q7)?                                                                                                                                                                            | Pending (held for Jaime)                                                                                                                  | Product owner      |
 
 ---
 
@@ -758,6 +789,9 @@ row says otherwise.
 | `voice_calls` table and 0348 columns (`lead_id`, `transcript`, `metadata`)                  | `supabase/baseline.sql:23790`, `:32472-32480`                                                                                             |
 | Last redaction cascade; `voice_calls` block without `transcript`                            | `supabase/baseline.sql:35136`, `:35388-35394`                                                                                             |
 | `transcript = null` only in the earlier definition                                          | `supabase/baseline.sql:32547`, `:32732`                                                                                                   |
+| Last cascade returns early for an already anonymized contact                                | `supabase/baseline.sql:35162-35164`                                                                                                       |
+| Correction check runs only in `moveLeadHandler`; the board move route bypasses it           | `app/api/v1/leads/_handler.ts:43`, `:1118-1160`; `app/api/v1/leads/[id]/move/route.ts:267-268`                                            |
+| Harness `fora_do_escopo` Central item; the MCP path only returns a refusal to the model     | `lib/agent-engine/edge/crm/move-lead-stage.ts:120-130`; `lib/ai/runtime/tools.ts:222-235`                                                 |
 | Cascade clears activity `payload`, `metadata`, `reason`                                     | `supabase/baseline.sql:35245-35252`                                                                                                       |
 | Cascade's `messages` block does not clear `media_derived_text`                              | `supabase/baseline.sql:35228-35237`, column at `:7496`                                                                                    |
 | Access export selects `voice_calls` without `transcript`                                    | `lib/lgpd/export-collector.ts:1046-1049`                                                                                                  |
@@ -807,11 +841,12 @@ git log --oneline -1
 ls supabase/migrations | sed -nE 's#^[0-9]{14}_([0-9]{4})_.*#\1#p' | sort -n | tail -1
 pnpm checar:colisao-de-migration
 
-# Last definition of a baseline function (never the first grep hit)
-python3 -c "s=open('supabase/baseline.sql').read(); n='fn_lgpd_cascade_redact_contact'; i=s.rfind('CREATE OR REPLACE FUNCTION \"public\".\"'+n); print(s.count(chr(10),0,i)+1)"
+# Last definition of a baseline function (never the first grep hit; case-insensitive and
+# quote-tolerant, so a lowercase appendix definition is found too)
+python3 -I -c 'import re; s=open("supabase/baseline.sql").read(); m=list(re.finditer(r"(?im)^create or replace function \"?public\"?\.\"?fn_lgpd_cascade_redact_contact\"?\s*\(", s)); print(s.count("\n",0,m[-1].start())+1)'
 
 # Does the last cascade null voice_calls.transcript? (0 today)
-python3 -c "s=open('supabase/baseline.sql').read(); i=s.rfind('CREATE OR REPLACE FUNCTION \"public\".\"fn_lgpd_cascade_redact_contact'); j=s.find('\$\$;', i); print(s[i:j].count('transcript = null'))"
+python3 -I -c 'import re; s=open("supabase/baseline.sql").read(); i=list(re.finditer(r"(?im)^create or replace function \"?public\"?\.\"?fn_lgpd_cascade_redact_contact\"?\s*\(", s))[-1].start(); j=s.find("$$;", i); print(s[i:j].count("transcript = null"))'
 
 # Billing-table ruler from operacao-de-agentes.md (credit_ledger does not match it)
 grep -oiE 'create table (if not exists )?public\.[a-z_]+' supabase/baseline.sql \

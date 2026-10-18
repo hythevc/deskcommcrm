@@ -1,13 +1,13 @@
 # DeskcommCRM — Design brief (call summary, deal next step, credits)
 
-| Field     | Value                                                                                                                                                                                                                                                |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status    | Draft for review. Docs-only PR from branch `claude/deskcomm-project-docs`.                                                                                                                                                                           |
-| Base      | `main` at `f322ca4` of `jaimedhenriques/deskcommcrm`. Every line number below was read at that commit.                                                                                                                                               |
-| Scope     | Four UI surfaces: (A) call summary block in the deal timeline, slice 1; (B) deal next step on the kanban card and in the deal dossier, slice 2; (C) credits balance and ledger history on `/app/ai/usage`, slice 3; (D) admin grant dialog, slice 3. |
-| Owns      | Look, copy (exact pt-BR strings), states, motion, accessibility, white-label and i18n rules for those surfaces; how 21st.dev and shadcn patterns are used here.                                                                                      |
-| Does not  | Data flow, routes and guards (in `TRD.md`), DDL (in `BACKEND_SCHEMA.md`), journeys and screen order (in `APP_FLOW.md`), task order (in `IMPLEMENTATION_PLAN.md`), product rationale (in `PRD.md`).                                                   |
-| Authority | Design system v1.0 (`docs/design-system/README.md:8`: "a doc vence" over code). This brief cites it and does not restate it. Where the design-system docs and the code differ today, §2 says which one a slice PR follows and why.                   |
+| Field     | Value                                                                                                                                                                                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status    | Draft for review. Docs-only PR from branch `claude/deskcomm-project-docs`.                                                                                                                                                                                                                        |
+| Base      | `main` at `f322ca4` of the fork. Every line number below was read at that commit.                                                                                                                                                                                                                 |
+| Scope     | Four UI surfaces: (A) call summary block in the deal timeline, slice 1; (B) deal next step on the kanban card and in the deal dossier, slice 2; (C) credits balance and ledger history, slice 3, placement and history read pending PRD §10 Q4 (held for Jaime); (D) admin grant dialog, slice 3. |
+| Owns      | Look, copy (exact pt-BR strings), states, motion, accessibility, white-label and i18n rules for those surfaces; how 21st.dev and shadcn patterns are used here.                                                                                                                                   |
+| Does not  | Data flow, routes and guards (in `TRD.md`), DDL (in `BACKEND_SCHEMA.md`), journeys and screen order (in `APP_FLOW.md`), task order (in `IMPLEMENTATION_PLAN.md`), product rationale (in `PRD.md`).                                                                                                |
+| Authority | Design system v1.0 (`docs/design-system/README.md:8`: "a doc vence" over code). This brief cites it and does not restate it. Where the design-system docs and the code differ today, §2 says which one a slice PR follows and why.                                                                |
 
 **Markers.** `CONFIRMED` means the writer opened the cited file at `f322ca4` and read the cited
 lines. `INFERRED` means it follows from code or docs that were read, but nobody rendered it.
@@ -20,19 +20,19 @@ brief needs something they do not settle, §12 asks.
 
 ## 1. Surfaces at a glance
 
-| Id  | Surface                       | Slice | Where it renders (today's file)                                                                           | Who sees it                                                                                     | State    |
-| --- | ----------------------------- | ----- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------- |
-| A   | Call summary block            | 1     | `components/kanban/LeadTimeline.tsx`, inside the deal dossier `components/kanban/LeadDossier.tsx:140-150` | Anyone who opens the deal                                                                       | PROPOSED |
-| B1  | Next step on the kanban card  | 2     | `components/kanban/KanbanCard.tsx:250-287` (band ③), precedence in `lib/kanban/card-state.ts:166-243`     | Anyone on the board                                                                             | PROPOSED |
-| B2  | Next step in the deal dossier | 2     | `components/kanban/LeadDossier.tsx`, between the live header (`:82-115`) and the conversation (`:128`)    | Anyone who opens the deal; editing follows the lead patch route's permissions (TRD §5.2)        | PROPOSED |
-| C   | Credits card                  | 3     | `app/app/ai/usage/page.tsx`, between `BudgetCard` (`:68`) and `UsageDashboardClient` (`:69`)              | Manager and above (the page redirects lower roles, `page.tsx:26-28`)                            | PROPOSED |
-| D   | Grant dialog                  | 3     | Opened from surface C                                                                                     | Admin only (`isAdmin` already computed at `page.tsx:54`); D3 route guard `requireRole("admin")` | PROPOSED |
+| Id  | Surface                       | Slice | Where it renders (today's file)                                                                                                                       | Who sees it                                                                                     | State    |
+| --- | ----------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------- |
+| A   | Call summary block            | 1     | `components/kanban/LeadTimeline.tsx`, inside the deal dossier `components/kanban/LeadDossier.tsx:140-150`                                             | Anyone who opens the deal                                                                       | PROPOSED |
+| B1  | Next step on the kanban card  | 2     | `components/kanban/KanbanCard.tsx:250-287` (band ③), precedence in `lib/kanban/card-state.ts:166-243`                                                 | Anyone on the board                                                                             | PROPOSED |
+| B2  | Next step in the deal dossier | 2     | `components/kanban/LeadDossier.tsx`, between the live header (`:82-115`) and the conversation (`:128`)                                                | Anyone who opens the deal; editing follows the lead patch route's permissions (TRD §5.2)        | PROPOSED |
+| C   | Credits card                  | 3     | Pending PRD §10 Q4 (held for Jaime); §6 draws the `app/app/ai/usage/page.tsx` option, between `BudgetCard` (`:68`) and `UsageDashboardClient` (`:69`) | Manager and above on that option (the page redirects lower roles, `page.tsx:26-28`)             | PROPOSED |
+| D   | Grant dialog                  | 3     | Opened from surface C                                                                                                                                 | Admin only (`isAdmin` already computed at `page.tsx:54`); D3 route guard `requireRole("admin")` | PROPOSED |
 
 "The deal page" is the dossier sheet: `/app/leads/[id]` only resolves the pipeline and redirects to
 `/app/pipelines/<id>?lead=<id>`, which opens `LeadDossier` (`app/app/leads/[id]/page.tsx:41-49`,
 CONFIRMED). No surface in this brief is a new route, so no new entry in `lib/navigation/catalogo.ts`
-is needed (DoD 14); surface C lives on the existing `/app/ai/usage` entry (`catalogo.ts:568-576`,
-CONFIRMED).
+is needed (DoD 14); if PRD §10 Q4 (held for Jaime) picks `/app/ai/usage`, surface C lives on that
+existing entry (`catalogo.ts:568-576`, CONFIRMED).
 
 ```mermaid
 flowchart LR
@@ -166,13 +166,13 @@ this, re-measure with `ls components/ui`).
 
 ### 3.1 Pattern map
 
-| Pattern (21st.dev / shadcn name) | Used for                      | Base in this repo (CONFIRMED)                                                                                                                                               | Take                                                                                  | Do not take                                                                                              |
-| -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Activity feed item               | A, the `call_summarized` row  | `Linha` in `LeadTimeline.tsx:54-86`: label, reason, actor · time                                                                                                            | Row anatomy, relative-time line, actor attribution                                    | Avatars per row, coloured type icons, cards per item, hover elevation                                    |
-| Disclosure                       | A, "Ver resumo"               | The existing `abertos` expand state and `aria-expanded` buttons (`LeadTimeline.tsx:98`, `:135-157`, `:183-203`)                                                             | Native `<button aria-expanded aria-controls>`; content after the button in DOM order  | `@radix-ui/react-collapsible` or shadcn `collapsible`/`accordion` (none installed, D1); height animation |
-| Inline stat row                  | C, balance and unpriced count | The `09-anti-patterns.md` §11 alternative: big text plus label, no container per metric                                                                                     | `<dl>` with `dt`/`dd`, dividers between metrics                                       | The 4-card `StatCard` grid in `app/app/ai/usage/_client.tsx:21-37`, `:89-120`                            |
-| Data table                       | C, ledger history             | `components/ui/table.tsx` (wraps in `overflow-auto`, `:9`); precedents `app/app/ai/agents/[id]/_components/RunsTable.tsx`, `app/app/team/_components/TeamMembersClient.tsx` | Semantic `<table>`, header cells with `scope="col"`, right-aligned numbers            | Zebra rows in accent, sticky glass headers, row hover lift, column icons                                 |
-| Dialog                           | D, grant                      | `components/ui/dialog.tsx` (Radix); in-repo precedent `EditBudgetDialog` with native radios (`components/ai/BudgetCard.tsx:292`, `:314-515`)                                | Header, description, fieldset of radios, footer with Cancelar (ghost) and the primary | Multi-step wizards, a second dialog from this one (`06-components.md:295`), toast-only errors            |
+| Pattern (21st.dev / shadcn name) | Used for                      | Base in this repo (CONFIRMED)                                                                                                                                                       | Take                                                                                  | Do not take                                                                                              |
+| -------------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Activity feed item               | A, the `call_summarized` row  | `Linha` in `LeadTimeline.tsx:54-86`: label, reason, actor · time                                                                                                                    | Row anatomy, relative-time line, actor attribution                                    | Avatars per row, coloured type icons, cards per item, hover elevation                                    |
+| Disclosure                       | A, "Ver resumo"               | The existing `aria-expanded` toggle buttons (`LeadTimeline.tsx:135-157`, `:183-203`); the summary keys its own state by activity id, not by the index-keyed `abertos` (`:98`, §4.3) | Native `<button aria-expanded aria-controls>`; content after the button in DOM order  | `@radix-ui/react-collapsible` or shadcn `collapsible`/`accordion` (none installed, D1); height animation |
+| Inline stat row                  | C, balance and unpriced count | The `09-anti-patterns.md` §11 alternative: big text plus label, no container per metric                                                                                             | `<dl>` with `dt`/`dd`, dividers between metrics                                       | The 4-card `StatCard` grid in `app/app/ai/usage/_client.tsx:21-37`, `:89-120`                            |
+| Data table                       | C, ledger history             | `components/ui/table.tsx` (wraps in `overflow-auto`, `:9`); precedents `app/app/ai/agents/[id]/_components/RunsTable.tsx`, `app/app/team/_components/TeamMembersClient.tsx`         | Semantic `<table>`, header cells with `scope="col"`, right-aligned numbers            | Zebra rows in accent, sticky glass headers, row hover lift, column icons                                 |
+| Dialog                           | D, grant                      | `components/ui/dialog.tsx` (Radix); in-repo precedent `EditBudgetDialog` with native radios (`components/ai/BudgetCard.tsx:292`, `:314-515`)                                        | Header, description, fieldset of radios, footer with Cancelar (ghost) and the primary | Multi-step wizards, a second dialog from this one (`06-components.md:295`), toast-only errors            |
 
 ### 3.2 Mandatory re-skin rules (from `09-anti-patterns.md`)
 
@@ -279,12 +279,13 @@ Expanded:
 
 ### 4.3 Behaviour (PROPOSED)
 
-- **Expand state.** Reuse the component's `abertos` state (D1, no new dependency). Today it is a
-  `Set<number>` keyed by block index (`LeadTimeline.tsx:98`). Live arrivals are prepended as isolated
-  blocks (`timeline-grouping.ts:93-96`, `:191-197`), which shifts every index; keyed by index, an
-  open summary would jump to the wrong row when a new event arrives (INFERRED from the code, not
-  observed). Key the summary disclosure by the activity id. Re-keying the existing group and day
-  toggles is out of scope; record the same risk for them as an observation in the slice PR.
+- **Expand state.** A per-row disclosure keyed by the activity id, in component state, with no new
+  dependency (D1 asks only for an expand). The existing `abertos` is a `Set<number>` keyed by block
+  index (`LeadTimeline.tsx:98`) and is left as is: live arrivals are prepended as isolated blocks
+  (`timeline-grouping.ts:93-96`, `:191-197`), which shifts every index, so an index-keyed summary
+  would jump to the wrong row when a new event arrives (INFERRED from the code, not observed).
+  Re-keying the existing group and day toggles is out of scope; record the same risk for them as an
+  observation in the slice PR.
 - **Never folded.** `call_summarized` joins `NUNCA_COLAPSA` (D1), so it never hides inside "Agente ·
   3 ações" or a day block.
 - **Live arrival.** A summary that arrives by realtime keeps the existing "agora" marker
@@ -472,16 +473,16 @@ stateDiagram-v2
 
 ### 5.4 Timeline rows for slice 2 (PROPOSED)
 
-| Type            | Label (exact)            | Body                                                                                                                                    | Folding                                                                    |
-| --------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `next_step_set` | `Próximo passo definido` | The new text from `payload`, read through an exported schema, `text-xs`, `line-clamp-2`; label only if the payload is `{}` or invalid   | Never folds (TRD §5.4); this brief answers PRD Q9 the same way             |
-| `lead_edited`   | unchanged                | `reason` "Alterou o próximo passo" — names, never values (`_handler.ts:743-757`); add `next_step: "o próximo passo"` to `NOME_DO_CAMPO` | unchanged                                                                  |
-| `stage_changed` | unchanged                | unchanged                                                                                                                               | May fold with the same turn's `ai_turn`; reachable by expanding (TRD §5.4) |
+| Type            | Label (exact)            | Body                                                                                                                                               | Folding                                                                    |
+| --------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `next_step_set` | `Próximo passo definido` | The new text from `payload`, read through the exported schema of TRD §5.5, `text-xs`, `line-clamp-2`; label only if the payload is `{}` or invalid | Never folds (TRD §5.4), the lane default of PRD §10 Q9                     |
+| `lead_edited`   | unchanged                | `reason` "Alterou o próximo passo" — names, never values (`_handler.ts:743-757`); add `next_step: "o próximo passo"` to `NOME_DO_CAMPO`            | unchanged                                                                  |
+| `stage_changed` | unchanged                | unchanged                                                                                                                                          | May fold with the same turn's `ai_turn`; reachable by expanding (TRD §5.4) |
 
 Showing the AI's text but not the human's follows the existing rule that the origin of the text
 decides: machine-written proposals may show their content, human-written values go to
-`api_audit_log` only (`_handler.ts:750-756`). The `next_step_set` payload shape is not defined in
-TRD §5; §12 Q11 asks for it.
+`api_audit_log` only (`_handler.ts:750-756`). The `next_step_set` payload is the exported schema of
+TRD §5.5 (`schema_version`, `next_step`, `next_action_seq`), which closes §12 Q11.
 
 ### 5.5 Copy (exact strings)
 
@@ -512,7 +513,7 @@ the other waits for a decision. §12 Q12 asks the owner to confirm the glossary.
 
 ---
 
-## 6. Surface C — credits on `/app/ai/usage` (slice 3)
+## 6. Surface C — credits card (slice 3; placement pending PRD §10 Q4, held for Jaime)
 
 ### 6.1 What exists
 
@@ -520,9 +521,10 @@ the other waits for a decision. §12 Q12 asks the owner to confirm the glossary.
   cents (`app/app/ai/usage/page.tsx:22-72`, `_client.tsx:89-120`, CONFIRMED).
 - No credits UI, balance or history exists anywhere (CONFIRMED: no `create table` matching
   `credit` in `supabase/baseline.sql`, and no `credit_ledger` or `creditos` in `app`, `components`,
-  `hooks` or `lib`). The PRD leaves the surface open (PRD §10 Q4, default "API and DB only"). This
-  brief proposes `/app/ai/usage` as the answer; if the owner picks another page, the card moves
-  unchanged.
+  `hooks` or `lib`). Where the surface lives, and whether a ledger-history read exists, is pending
+  PRD §10 Q4 (held for Jaime). This section draws the card for the `/app/ai/usage` option only,
+  because it is the existing screen that shows AI spend; it is not a default, and if the owner
+  picks another page the card moves unchanged.
 
 ### 6.2 Anatomy (PROPOSED)
 
@@ -564,7 +566,8 @@ One card (`06-components.md:59-80`, "data" variant: border, no hover), full widt
   Newest first. Columns: "Quando" (`font-mono text-[13px]`, date and time in the reader's language),
   "Movimento" (kind label), "Origem", "Créditos" (right-aligned, `font-mono tabular-nums`, explicit
   sign). "Mostrar mais" loads the next page; no infinite scroll (`07:143`). Page size comes from the
-  read route, not from this brief.
+  read route, not from this brief. The history needs a paginated read that no sibling doc
+  specifies; it is pending PRD §10 Q4 (held for Jaime), and the table is not built until then.
 - **Origem.** For `debit_llm_call`, the `rotulo` of the call's purpose from
   `lib/ai/pontos/registro.ts` (field at `:133-134`), through `t()`; fallback "Uso de IA". For
   `grant` and `adjustment`, "Lançamento manual". Reason and author are not shown: D3's columns do
@@ -646,7 +649,7 @@ Shared `Dialog` primitive, default width, structure of `06-components.md:138-158
 3. **Fieldset "Direção"**, only when "Ajustar" is chosen: "Somar", "Retirar".
 4. **"Créditos"**: `Input` with `inputMode="numeric"`, whole numbers greater than zero; helper
    "Número inteiro, maior que zero." The sign comes from the type and direction, never from a typed
-   minus.
+   minus. How these fields map onto the route's body is pending PRD §10 Q16 (held for Jaime).
 5. **"Motivo"**: `Textarea`, required; helper "Fica registrado na auditoria." No maximum is invented;
    a counter appears only if the route's schema sets one.
 6. **Preview**, in a polite live region: "Saldo agora: N. Depois do lançamento: M." computed from
@@ -819,20 +822,20 @@ screen on a fresh install.
 
 ## 12. Decisions this brief could not make
 
-| #   | Question                                                                                                                                                                                                                                                                                            | Brief default if nobody answers                                                                          | Who decides                       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Q1  | D2 writes the same text to the contact-level proposal and to `crm_leads.next_step` in one turn, so the card shows "Propõe: … Aprovar / Ignorar" for a step that is already applied on the deal. Keep the proposal first, or show the applied next step and stop showing the proposal for that deal? | Keep `awaiting` first (D2 and DEAL-08 keep the proposal flow); the dossier always shows the next step.   | Product owner, lane               |
-| Q2  | Should the card and dossier say who wrote the current next step? D2 stores no author. Option: an author-kind column in migration 0444.                                                                                                                                                              | No author on card or dossier; attribution lives in the timeline rows.                                    | Lane, `BACKEND_SCHEMA.md`         |
-| Q3  | After a human edits the next step, may the AI overwrite it on the next turn? And should the server refuse a write based on a stale `next_step_updated_at`?                                                                                                                                          | Yes, the AI may overwrite (D2 as written); the editor helper says so; conflict handled client-side only. | Product owner                     |
-| Q4  | Credits surface location (PRD §10 Q4).                                                                                                                                                                                                                                                              | `/app/ai/usage`, between the budget card and the usage dashboard.                                        | Product owner                     |
-| Q5  | May the UI state the credit unit (PRD §10 Q1)?                                                                                                                                                                                                                                                      | Not rendered until Q1 is confirmed.                                                                      | Product owner                     |
-| Q6  | The history table needs a paginated read (TRD §6.2 lists only a balance read) and, to show who granted and why, columns D3 does not have. Add a history read route; store reason and author on the ledger or read them from the audit log?                                                          | Read route added in slice 3; no reason or author column shown.                                           | Lane, TRD and `BACKEND_SCHEMA.md` |
-| Q7  | PRD CRED-12 says "grant or adjustment"; TRD §6.2 says the body is "positive integer credits". The dialog needs the type and, for an adjustment, a direction. Which body shape?                                                                                                                      | Body carries `kind` and a signed amount derived from type and direction.                                 | Lane, TRD                         |
-| Q8  | Grants by organization admin (D3) or platform admin (TRD §7 Q2)?                                                                                                                                                                                                                                    | Organization admin on `/app/ai/usage`.                                                                   | Product owner                     |
-| Q9  | "Confira" works best with the transcript one click away, but `/app/calls` has no per-call link and is manager-only (`catalogo.ts:265-271`). Add a per-call link and show it to managers in the summary block?                                                                                       | No link in slice 1.                                                                                      | Lane                              |
-| Q10 | Language of the generated summary: the organization's language or the call's language?                                                                                                                                                                                                              | Not decided here; the UI renders whatever the payload holds.                                             | Lane, TRD                         |
-| Q11 | `next_step_set` payload shape, so the row can show the AI's text through a central schema.                                                                                                                                                                                                          | Row shows the label only until the schema exists.                                                        | Lane, TRD                         |
-| Q12 | Glossary: "Próximo passo" for the deal field next to the existing "Próxima ação" for the proposal.                                                                                                                                                                                                  | Two terms, as in §5.5.                                                                                   | Product owner                     |
+| #   | Question                                                                                                                                                                                                                                                                                            | Brief default if nobody answers                                                                               | Who decides                |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| Q1  | D2 writes the same text to the contact-level proposal and to `crm_leads.next_step` in one turn, so the card shows "Propõe: … Aprovar / Ignorar" for a step that is already applied on the deal. Keep the proposal first, or show the applied next step and stop showing the proposal for that deal? | Keep `awaiting` first (D2 and DEAL-08 keep the proposal flow); the dossier always shows the next step.        | Product owner, lane        |
+| Q2  | Should the card and dossier say who wrote the current next step? D2 stores no author. Option: an author-kind column in migration 0444.                                                                                                                                                              | No author on card or dossier; attribution lives in the timeline rows.                                         | Lane, `BACKEND_SCHEMA.md`  |
+| Q3  | After a human edits the next step, may the AI overwrite it on the next turn? And should the server refuse a write based on a stale `next_step_updated_at`?                                                                                                                                          | Yes, the AI may overwrite (D2 as written); the editor helper says so; conflict handled client-side only.      | Product owner              |
+| Q4  | Credits surface location (PRD §10 Q4).                                                                                                                                                                                                                                                              | Pending PRD §10 Q4 (held for Jaime); no default. §6 draws the `/app/ai/usage` option only.                    | Product owner              |
+| Q5  | May the UI state the credit unit (PRD §10 Q1)?                                                                                                                                                                                                                                                      | Not rendered until Q1 is confirmed.                                                                           | Product owner              |
+| Q6  | The history table needs a paginated read (TRD §6.2 lists only a balance read) and, to show who granted and why, columns D3 does not have. Add a history read route; store reason and author on the ledger or read them from the audit log?                                                          | History read: pending PRD §10 Q4 (held for Jaime). Reason and author: not shown (`BACKEND_SCHEMA.md` §10 Q8). | Product owner; lane for Q8 |
+| Q7  | PRD CRED-12 says "grant or adjustment"; TRD §6.2 leaves the body shape to PRD §10 Q16. The dialog needs the type and, for an adjustment, a direction. Which body shape?                                                                                                                             | Pending PRD §10 Q16 (held for Jaime); no default.                                                             | Product owner              |
+| Q8  | Grants by organization admin (D3) or platform admin (TRD §7 Q2)?                                                                                                                                                                                                                                    | Organization admin on `/app/ai/usage`.                                                                        | Product owner              |
+| Q9  | "Confira" works best with the transcript one click away, but `/app/calls` has no per-call link and is manager-only (`catalogo.ts:265-271`). Add a per-call link and show it to managers in the summary block?                                                                                       | No link in slice 1.                                                                                           | Lane                       |
+| Q10 | Language of the generated summary: the organization's language or the call's language?                                                                                                                                                                                                              | Not decided here; the UI renders whatever the payload holds.                                                  | Lane, TRD                  |
+| Q11 | `next_step_set` payload shape, so the row can show the AI's text through a central schema.                                                                                                                                                                                                          | Closed: TRD §5.5 defines the exported schema (`schema_version`, `next_step`, `next_action_seq`).              | Lane, TRD                  |
+| Q12 | Glossary: "Próximo passo" for the deal field next to the existing "Próxima ação" for the proposal.                                                                                                                                                                                                  | Two terms, as in §5.5.                                                                                        | Product owner              |
 
 ---
 
@@ -872,7 +875,7 @@ grep -n "function StatCard\|lg:grid-cols-4" app/app/ai/usage/_client.tsx
 grep -n "codigo:\|nivel:" lib/i18n/registro.ts
 
 # Last LGPD cascade and its activity payload strip
-python3 -c "s=open('supabase/baseline.sql').read(); i=s.rfind('CREATE OR REPLACE FUNCTION \"public\".\"fn_lgpd_cascade_redact_contact\"'); print(s.count(chr(10),0,i)+1)"
+python3 -I -c 'import re; s=open("supabase/baseline.sql").read(); m=list(re.finditer(r"(?im)^create or replace function \"?public\"?\.\"?fn_lgpd_cascade_redact_contact\"?\s*\(", s)); print(s.count("\n",0,m[-1].start())+1)'
 grep -n "payload = '{}'::jsonb" supabase/baseline.sql | tail -1
 
 # Gates these surfaces must pass

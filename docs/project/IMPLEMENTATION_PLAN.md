@@ -11,9 +11,9 @@ referencia_arquitetural: ARCHITECTURE.md, docs/project/TRD.md
 
 # DeskcommCRM — Implementation plan
 
-> Tasks, order, pull requests and proof for the three slices of the Clarify-parity lane in the fork
-> `jaimedhenriques/deskcommcrm`: (1) call summary into the deal timeline, (2) the AI writes deal
-> stage and next step, (3) credits metering to a ledger. What and why live in `PRD.md`; how lives in
+> Tasks, order, pull requests and proof for the three slices of the Clarify-parity lane in the
+> fork: (1) call summary into the deal timeline, (2) the AI writes deal stage and next step, (3)
+> credits metering to a ledger. What and why live in `PRD.md`; how lives in
 > `TRD.md`; screens in `APP_FLOW.md`; UI in `DESIGN_BRIEF.md`; tables and DDL in `BACKEND_SCHEMA.md`.
 > This plan says **in what order, in which files, proven how, merged through which PR**. It copies
 > the task format of `.specs/features/crm-automacao-fluxos/tasks.md` (What / Where / Depends on /
@@ -53,45 +53,51 @@ referencia_arquitetural: ARCHITECTURE.md, docs/project/TRD.md
 One draft PR per slice, smallest first. Status is the truth for this lane; update it in the same
 PR that moves a task (§11).
 
-| #   | Task                                                                      | Slice | Depends on                    | Branch                            | Gate  | Status |
-| --- | ------------------------------------------------------------------------- | ----- | ----------------------------- | --------------------------------- | ----- | ------ |
-| T0  | Publish the six `docs/project/` docs as a draft PR                        | docs  | —                             | `claude/deskcomm-project-docs`    | quick | ⬜     |
-| T1  | Repro: transcript survives redaction and is missing from the export       | 1     | —                             | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T2  | Migration 0443: cascade nulls the transcript; one summary per call        | 1     | T1                            | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T3  | Access export carries the transcript and the summary                      | 1     | T1                            | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T4  | Activity type `call_summarized`, never collapsed                          | 1     | —                             | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T5  | Pure summariser module and fixtures                                       | 1     | —                             | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T6  | Summary handler, AI purpose, handler registration                         | 1     | T2, T4, T5                    | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T7  | Voice agent emits `voice_call.summary_requested`                          | 1     | T6                            | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T8  | DB invariant: fixture transcript to one AI row on the deal                | 1     | T2, T6, T7                    | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T9  | Timeline renders the summary (surface A)                                  | 1     | T4, T5                        | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T10 | Slice 1 close-out: map, fragment, state claims, destination               | 1     | T8, T9                        | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T11 | Slice 1 screen proof and draft PR                                         | 1     | T3, T10                       | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T12 | Repro: AI stage move is `system`, keys `de`/`para`, harness ignores scope | 2     | —                             | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T13 | Recorded-conversation fixture                                             | 2     | —                             | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T14 | Attributed, scoped stage mirror                                           | 2     | T12, decision TRD §7 Q1       | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T15 | Correction check on board and bulk moves                                  | 2     | T14, decision APP_FLOW §8 A6  | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T16 | Migration 0444: `crm_leads.next_step`; cascade nulls it                   | 2     | T2 merged to `main`           | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T17 | Next-step mirror and `next_step_set`                                      | 2     | T14, T16                      | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T18 | Human edit of the next step; export carries it                            | 2     | T16                           | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T19 | Card and dossier show the next step (surfaces B1, B2)                     | 2     | T17, T18                      | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T20 | DB invariant: recorded conversation replayed through the turn             | 2     | T13, T14, T17                 | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T21 | Paired proof by screen (prova em par)                                     | 2     | T19, T20, decision §12 P3     | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T22 | Slice 2 close-out and draft PR                                            | 2     | T20, T21                      | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T23 | Credit conversion rule (pure TS)                                          | 3     | —                             | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T24 | Migration 0445: ledger, policies, immutability, metering, balance         | 3     | T23, decision PRD §10 Q2      | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T25 | Register the ledger in the isolation and vocabulary invariants            | 3     | T24                           | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T26 | DB invariant: debits, idempotency, null cost, balance                     | 3     | T24                           | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T27 | DB invariant: append-only under the Supabase default ACL                  | 3     | T24                           | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T28 | Balance read route with the unpriced count                                | 3     | T24                           | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T29 | Grant and adjustment route                                                | 3     | T24, decision TRD §7 Q2       | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T30 | Credits card and grant dialog (surfaces C, D)                             | 3     | T28, T29, decision PRD §10 Q4 | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T31 | State claims (DoD 16) and the budget architecture map                     | 3     | T24                           | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T32 | Slice 3 screen proof, fragment and draft PR                               | 3     | T25, T26, T27, T30, T31       | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| #   | Task                                                                      | Slice | Depends on                            | Branch                            | Gate  | Status |
+| --- | ------------------------------------------------------------------------- | ----- | ------------------------------------- | --------------------------------- | ----- | ------ |
+| T0  | Publish the six `docs/project/` docs as a draft PR                        | docs  | —                                     | `claude/deskcomm-project-docs`    | quick | ⬜     |
+| T1  | Repro: transcript survives redaction and is missing from the export       | 1     | —                                     | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T2  | Migration 0443: cascade nulls the transcript; one summary per call        | 1     | T1                                    | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T3  | Access export carries the transcript and the summary                      | 1     | T1                                    | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T4  | Activity type `call_summarized`, never collapsed                          | 1     | —                                     | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T5  | Pure summariser module and fixtures                                       | 1     | —                                     | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T6  | Summary handler, AI purpose, handler registration                         | 1     | T2, T4, T5                            | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T7  | Voice agent emits `voice_call.summary_requested`                          | 1     | T6                                    | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T8  | DB invariant: fixture transcript to one AI row on the deal                | 1     | T2, T6, T7                            | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T9  | Timeline renders the summary (surface A)                                  | 1     | T4, T5                                | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T10 | Slice 1 close-out: map, fragment, state claims, destination               | 1     | T8, T9                                | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T11 | Slice 1 screen proof and draft PR                                         | 1     | T3, T10                               | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T12 | Repro: AI stage move is `system`, keys `de`/`para`, harness ignores scope | 2     | —                                     | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T13 | Recorded-conversation fixture                                             | 2     | —                                     | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T14 | Attributed, scoped stage mirror                                           | 2     | T12, decision TRD §7 Q1               | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T15 | Correction check on board and bulk moves                                  | 2     | T14, decision APP_FLOW §8 A6          | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T16 | Migration 0444: `crm_leads.next_step`; cascade nulls it                   | 2     | T2 merged to `main`                   | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T17 | Next-step mirror and `next_step_set`                                      | 2     | T14, T16                              | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T18 | Human edit of the next step; export carries it                            | 2     | T16                                   | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T19 | Card and dossier show the next step (surfaces B1, B2)                     | 2     | T17, T18                              | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T20 | DB invariant: recorded conversation replayed through the turn             | 2     | T13, T14, T17                         | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T21 | Paired proof by screen (prova em par)                                     | 2     | T19, T20, decision §12 P3             | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T22 | Slice 2 close-out and draft PR                                            | 2     | T20, T21                              | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T23 | Credit conversion rule (pure TS)                                          | 3     | —                                     | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T24 | Migration 0445: ledger, policies, immutability, metering, balance         | 3     | T23, decision PRD §10 Q2              | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T25 | Register the ledger in the isolation and vocabulary invariants            | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T26 | DB invariant: debits, idempotency, null cost, balance                     | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T27 | DB invariant: append-only under the Supabase default ACL                  | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T28 | Balance read route with the unpriced count                                | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T29 | Grant and adjustment route                                                | 3     | T24, decisions TRD §7 Q2, PRD §10 Q16 | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T30 | Credits card and grant dialog (surfaces C, D)                             | 3     | T28, T29, decision PRD §10 Q4         | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T31 | State claims (DoD 16) and the budget architecture map                     | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T32 | Slice 3 screen proof, fragment and draft PR                               | 3     | T25, T26, T27, T30, T31               | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
 
 A task whose "Depends on" names a decision can be drafted, but its behaviour must not ship until
 the question is answered (PRD §10: "none means the slice must not ship that behaviour until
 answered"). It turns ⛔ once everything else it needs is done and only the decision is missing.
+Decisions marked "held for Jaime" (PRD §10 Q2, Q4, Q16) are held for the owner via main; the plan
+names them and never picks an answer.
+
+Open sibling question for T6 and T8: `APP_FLOW.md` §8 A1 (a paid summary for a contact with no
+open deal, or tied deals, lands nowhere: `agent.activity_unrouted` has no reader; default there:
+gap accepted and recorded). T8's "two open deals: no row" case proves the gap, not a surface.
 
 ```mermaid
 flowchart TD
@@ -193,6 +199,9 @@ machine: `scripts/test-db.sh` starts its own container (`:144`) and `vitest.db.c
    CONFIRMED), so a PR stacked on another slice branch would never run those checks.
 5. **Bugs start with a repro.** T1 and T12 write the failing or defect-documenting test before
    any fix; their output is quoted in the PR body.
+6. **Slices 2 and 3 wait on the doctrine override.** `PRD.md` §6 records what the CEO directive
+   would override; the override is not confirmed while Jaime is away, so T12–T32 do not start
+   until it is (PRD status note).
 
 ---
 
@@ -282,8 +291,10 @@ table is visited but not which columns (its header says so, CONFIRMED), hence th
 
 **What:** New last definition of `fn_lgpd_cascade_redact_contact`, copied from the body at
 `supabase/baseline.sql:35136` with `transcript = null` restored in the `voice_calls` block and its ACL
-kept. Partial unique index on `crm_lead_activities (organization_id, source_id) where type =
-'call_summarized'` (TRD §4.6 layer 3). DDL is in `BACKEND_SCHEMA.md`.
+kept. A one-time repair `UPDATE` nulling the transcripts of already-anonymized contacts, because the
+cascade returns early for them (`:35162-35164`, CONFIRMED; `BACKEND_SCHEMA.md` §4 item 2; decision
+`BACKEND_SCHEMA.md` §10 Q7). Partial unique index on `crm_lead_activities (organization_id,
+source_id) where type = 'call_summarized'` (TRD §4.6 layer 3). DDL is in `BACKEND_SCHEMA.md`.
 **Where:** `supabase/migrations/<UTC timestamp>_0443_<slug>.sql`, a block in `supabase/baseline.sql`
 before `-- ---- VARREDURA anon:` (`:39296`, CONFIRMED), a row in `supabase/migrations/MANIFEST.md`.
 **Depends on:** T1
@@ -299,6 +310,7 @@ before `-- ---- VARREDURA anon:` (`:39296`, CONFIRMED), a row in `supabase/migra
       TRD §3)
 - [ ] T1 case (a) is green; a second application of the baseline (`pnpm test:db` applies it twice)
       and `pnpm test:db:update` pass
+- [ ] The repair is re-runnable: a second application matches zero rows
 - [ ] Gate: `pnpm vitest run tests/unit/manifest-x-migrations.test.ts tests/unit/varredura-anon-e-o-ultimo-bloco.test.ts`
       and `pnpm test:db tests/invariants/resumo-da-chamada-na-timeline.test.ts`
 
@@ -479,6 +491,8 @@ fixture transcript and the T7 event; run the handler with the scripted provider.
 - [ ] Empty transcript: no model call, no row
 - [ ] WaCalls `call-ended` produces no `voice_call.summary_requested`
 - [ ] After the cascade: `transcript is null` and the row's `payload = '{}'`
+- [ ] A contact anonymized before the 0443 block was applied has `transcript` null after it (the
+      repair; `BACKEND_SCHEMA.md` §9)
 - [ ] Unique ids and slugs per run (files run shuffled on a fresh clone)
 - [ ] Gate: `pnpm test:db tests/invariants/resumo-da-chamada-na-timeline.test.ts`, then the full
       `pnpm test:db` once before leaving draft
@@ -492,22 +506,36 @@ fixture transcript and the T7 event; run the handler with the scripted provider.
 
 ### T9: Timeline renders the summary (surface A)
 
-**What:** In `Linha`, a `call_summarized` row shows the label and a per-row expand that reuses the
-component's expand state; expanded, it shows the summary parsed with T5's payload schema, labelled as
-the AI's reading. Invalid payload: label only. Anonymised payload (`{}`): the line from
-`DESIGN_BRIEF.md` §4.4. `reason` stays PII-free.
+**What:** In `Linha`, a `call_summarized` row shows the label and a per-row disclosure keyed by the
+activity id (`DESIGN_BRIEF.md` §4.3); the index-keyed `abertos` set is left as is. Expanded, it shows
+the summary parsed with T5's payload schema, labelled as the AI's reading. Invalid payload: the
+unreadable line; anonymised payload (`{}`): the line from `DESIGN_BRIEF.md` §4.4. `reason` stays
+PII-free. Add `MagicWand` to the icon barrel (absent today, `DESIGN_BRIEF.md` §2.5) and one
+visually hidden polite live region in `LeadTimeline` that announces a live `call_summarized` row
+(`DESIGN_BRIEF.md` §8.2).
 **Where:** `components/kanban/LeadTimeline.tsx` (`Linha` at `:54`, `abertos` at `:98`, `t(item.reason)`
-at `:79`; CONFIRMED), `lib/i18n/dicionario.ts`, `tests/unit/lead-timeline-resumo.test.tsx` (new).
+at `:79`; CONFIRMED), `lib/ui/icons.ts`, `lib/i18n/dicionario.ts`,
+`tests/unit/lead-timeline-resumo.test.tsx` (new), a unit test for
+`components/contacts/TimelineView.tsx`.
 **Depends on:** T4, T5
-**Reuses:** existing expand state (no shadcn Collapsible exists in `components/ui`, per TRD §4.2);
-Phosphor icons only through `lib/ui/icons.ts`; copy and states from `DESIGN_BRIEF.md` §4.
+**Reuses:** the existing `aria-expanded` toggle pattern (no shadcn Collapsible exists in
+`components/ui`, per TRD §4.2); Phosphor icons only through `lib/ui/icons.ts`; copy and states
+from `DESIGN_BRIEF.md` §4.
 **Requirement:** CALL-07, CALL-08
 
 **Done when:**
 
 - [ ] Test queries by visible text and role and expands with `@testing-library/user-event`
-- [ ] No Lucide import, no `Sparkle`, no gradient (DESIGN_BRIEF §3.2)
+- [ ] An open summary stays open on the same row when a live row is prepended
+- [ ] `MagicWand` is exported from `lib/ui/icons.ts`; no Lucide import, no `Sparkle`, no gradient
+      (DESIGN_BRIEF §3.2)
+- [ ] A live `call_summarized` arrival is announced once in the polite region and focus does not
+      move
+- [ ] A unit test pins that `TimelineView` shows only the label for a `call_summarized` row, so its
+      payload fallback (`TimelineView.tsx:45-52`) never prints the AI's reading without the
+      "segundo a IA — confira" label (`DESIGN_BRIEF.md` §4.6)
 - [ ] Gate: `pnpm vitest run tests/unit/lead-timeline-resumo.test.tsx tests/unit/i18n-espanhol-cobre-a-tela.test.ts`
+      plus the `TimelineView` test
 
 **Tests:** unit (jsdom)
 **Gate:** quick
@@ -549,7 +577,7 @@ the PR body.
 it, read the AI-reading label. Evidence PNGs and an index. Open the draft PR (§9).
 **Where:** `tests/e2e/resumo-da-chamada-no-negocio.spec.ts` (new), listed in
 `.github/workflows/e2e.yml` under `SPECS_PARTE_*` or `FORA_DO_CI` with its reason
-(`tests/unit/e2e-cobertura-completa.test.ts`); `evidence/resumo-da-chamada/NN-slug.png` plus
+(`tests/unit/e2e-cobertura-completa.test.ts`); `evidence/resumo-da-chamada/<nn>-<slug>.png` plus
 `evidence/resumo-da-chamada.md`; `docs/testing/user-journey-map.md`.
 **Depends on:** T3, T10
 **Reuses:** `tests/qa-helpers.ts` (`guardaEvidencia`); login through the UI, no direct URLs
@@ -647,18 +675,22 @@ contact; a pipeline with mapped hints inside the agent's scope.
 
 ### T14: Attributed, scoped stage mirror
 
-**What:** `update_lead_state.execute` passes the agent id, the evidence and `escopoDeFunis`
+**What:** `update_lead_state.execute` passes the agent id and `escopoDeFunis`
 (`agentConfig.pipelineIds`, empty list moves nothing) to `mirrorLeadStageToCrm`, which forwards
 them to `sincronizaEstagioDoAgente`. There: actor `{ type: "ai_agent", … }` when an agent id is
-given, evidence passed to the emitter, payload `{ from_stage_id, to_stage_id, passo_do_agente }`,
-`organization_id` added to the stage `UPDATE`, agent id in the `lead.stage_changed` metadata.
-`applyLeadStateUpdate` reports whether `next_action` was written (used by T17).
+given, payload `{ from_stage_id, to_stage_id, passo_do_agente }`, `organization_id` added to the
+stage `UPDATE`, agent id in the `lead.stage_changed` metadata. Under the TRD §7 Q1 default the
+`stage_changed` row is returned to the turn, which writes it after `runModelCall` returns its
+`callId`, with `evidence: { llm_call_ids: [callId] }` (TRD §5.5). `applyLeadStateUpdate` reports
+whether `next_action` was written (used by T17).
 **Where:** `lib/agent-engine/agent/inbound-turn.ts` (`:3629-3660`, CONFIRMED),
 `lib/agent-engine/edge/crm/move-lead-stage.ts` (`:237-256`, CONFIRMED), `lib/leads/agent-stage-sync.ts`
 (`:218-222`, `:358-372`, `:398-407`, CONFIRMED), `lib/agent-engine/agent/lead-state.ts`,
 `tests/unit/agent-stage-sync.test.ts` (extended).
-**Depends on:** T12; **decision** TRD §7 Q1 (evidence kind: D2 says `llm_call_ids`, but the turn's
-call id does not exist yet when the tool runs, TRD §5.5; TRD default `trace_ids: [job_id]`).
+**Depends on:** T12; **decision** TRD §7 Q1 / PRD §10 Q15 (evidence kind: the turn's call id does
+not exist yet when the tool runs, TRD §5.5; TRD default, D2-compatible: rows written after
+`runModelCall` returns `callId`, evidence `llm_call_ids`; `trace_ids: [job_id]` is a proposed
+amendment to D2, pending lane authority).
 **Reuses:** `podeOperarNoFunil` (`lib/leads/escopo-de-funil.ts:193`, CONFIRMED) already applied when
 `escopoDeFunis` is defined (`agent-stage-sync.ts:275-277`, CONFIRMED); refusal vocabulary unchanged.
 **Requirement:** DEAL-01, DEAL-02, DEAL-03, DEAL-04
@@ -736,7 +768,8 @@ also nulls `next_step`; regenerate `lib/database.types.ts`. DDL in `BACKEND_SCHE
 in scope and update `next_step` and `next_step_updated_at` org-scoped `where next_step is distinct
 from` the new text; write one `next_step_set` activity (actor `ai`, evidence per T14) only when a row
 changed. Refusals `sem_negocio`, `ambiguo`, `fora_do_escopo` log a warning and write nothing. Add the
-type, label and its grouping per the answer to PRD §10 Q9 (TRD default: never collapse).
+type, label and its grouping per PRD §10 Q9 (lane default, as TRD §5.4: never collapse); export the
+`next_step_set` payload schema of TRD §5.5.
 **Where:** `lib/leads/proximo-passo-do-agente.ts` (new, TRD §5.2) plus its unit test,
 `lib/agent-engine/agent/inbound-turn.ts`, `lib/leads/activity-vocabulary.ts`,
 `lib/leads/timeline-grouping.ts`, `lib/i18n/dicionario.ts`.
@@ -763,9 +796,12 @@ type, label and its grouping per the answer to PRD §10 Q9 (TRD default: never c
 ### T18: Human edit of the next step; export carries it
 
 **What:** The lead patch accepts `next_step` (Zod, same max length as the AI side), sets
-`next_step_updated_at`, emits the usual edit activity attributed to the user. The access export adds
+`next_step_updated_at`, emits the usual edit activity attributed to the user, whose `reason` names
+the field through `NOME_DO_CAMPO.next_step = "o próximo passo"` (`DESIGN_BRIEF.md` §5.4; the map is
+at `lib/leads/activity-vocabulary.ts:350-361` and has no `next_step` today). The access export adds
 `next_step` to the `crm_leads` select.
-**Where:** `app/api/v1/leads/_handler.ts` (patch fields), `lib/lgpd/export-collector.ts`.
+**Where:** `app/api/v1/leads/_handler.ts` (patch fields), `lib/leads/activity-vocabulary.ts`,
+`lib/lgpd/export-collector.ts`.
 **Depends on:** T16
 **Reuses:** existing patch validation and audit of the lead route (INFERRED that the edit is audited
 today; the PR confirms by test).
@@ -773,7 +809,8 @@ today; the PR confirms by test).
 
 **Done when:**
 
-- [ ] A user edit writes the field and one row attributed to that user
+- [ ] A user edit writes the field and one row attributed to that user, with the reason "Alterou o
+      próximo passo" (names, never values)
 - [ ] Gate: route unit test and `pnpm vitest run tests/unit/lgpd-exporta-o-que-redige.test.ts`
 
 **Tests:** unit
@@ -798,6 +835,7 @@ DESIGN_BRIEF §12 Q1 on the proposal shown for a step already applied).
 
 - [ ] `resolveCardState` table test covers each precedence pair (DESIGN_BRIEF §11)
 - [ ] Edit, save and cancel driven with `user-event`; queries by text and role
+- [ ] A live `next_step_set` arrival is announced once in T9's polite region (`DESIGN_BRIEF.md` §8.2)
 - [ ] Gate: the new jsdom tests and `pnpm vitest run tests/unit/i18n-espanhol-cobre-a-tela.test.ts`
 
 **Tests:** unit (jsdom)
@@ -824,7 +862,8 @@ harness of `tests/invariants/limite-de-envios-por-turno.test.ts` and
 - [ ] `crm_leads.stage_id`, `next_step`, `next_step_updated_at` match the fixture
 - [ ] `stage_changed` and `next_step_set` rows have `actor_kind = 'ai'` and evidence
 - [ ] Out-of-scope pipeline: no move, one Central item; loss: no move; two open deals: nothing
-- [ ] A human move after the AI move writes `agent_move_corrected`
+- [ ] A human move after the AI move, driven through `moveLeadHandler` (and through
+      `POST /api/v1/leads/[id]/move` once T15 / PRD §10 Q14 is taken), writes `agent_move_corrected`
 - [ ] The cascade nulls `transcript` and `next_step` (rule 1 of §1.2)
 - [ ] Gate: `pnpm test:db tests/invariants/ia-move-etapa-e-proximo-passo.test.ts`, then full
       `pnpm test:db` once
@@ -912,7 +951,8 @@ Phase 3E (close):       T24 → T31 [P]; all → T32
 ### T23: Credit conversion rule (pure TS)
 
 **What:** The named constant and `creditosDaChamada(costCents)`: ceiling per call, null for null
-cost, no debit for negative cost; zero per the answer to PRD §10 Q2.
+cost, no debit for negative cost; zero per the answer to PRD §10 Q2 (pending, held for Jaime; no
+zero branch until answered).
 **Where:** `lib/creditos/conversao.ts`, `lib/creditos/conversao.test.ts` (both new, TRD §6.2, §6.16).
 **Depends on:** None.
 **Reuses:** test style of `lib/agent-engine/edge/llm/pricing.test.ts` (CONFIRMED to exist).
@@ -920,8 +960,8 @@ cost, no debit for negative cost; zero per the answer to PRD §10 Q2.
 
 **Done when:**
 
-- [ ] Fractional, whole, minimal positive, zero, null and negative inputs each map to the documented
-      result
+- [ ] Fractional, whole, minimal positive, null and negative inputs each map to the documented
+      result; the zero case is added once PRD §10 Q2 is answered
 - [ ] No price per credit anywhere in the module or its comments
 - [ ] Gate: `pnpm vitest run lib/creditos/conversao.test.ts`
 
@@ -939,13 +979,15 @@ adjustment`, sign tied to kind, `idempotency_key` unique per organization, `llm_
 null, `source_cost_cents`, `source_currency`, `created_at`); RLS on with one SELECT policy;
 revoke `update, delete, truncate` from `public, anon, authenticated, service_role` and `insert` from
 `anon, authenticated`; owner immutability trigger with the organization-deletion exemption;
-AFTER INSERT trigger on `llm_calls` for `status = 'ok'` and non-null cost, `on conflict do nothing`;
+AFTER INSERT trigger on `llm_calls` for `status = 'ok'` and a non-null, positive cost (zero cost
+pending PRD §10 Q2, held for Jaime), `on conflict do nothing`;
 `fn_saldo_de_creditos` (sum in the DB, `service_role` only); the SQL twin of T23's constant. DDL in
 `BACKEND_SCHEMA.md`. `fn_gasto_de_ia_do_mes` untouched.
 **Where:** `supabase/migrations/<UTC timestamp>_0445_<slug>.sql`, `supabase/baseline.sql` (one block
 before `-- ---- VARREDURA anon:`, `:39296`), `supabase/migrations/MANIFEST.md`, `lib/database.types.ts`,
 a unit test that reads the SQL constant from the labelled block and compares it to T23's.
-**Depends on:** T23; **decision** PRD §10 Q2 (zero-cost row; TRD §6.6 proposes a zero-delta row).
+**Depends on:** T23; **decision** PRD §10 Q2 (zero-cost row or skip; pending, held for Jaime; no
+sibling doc assumes either).
 **Reuses:** `loyalty_ledger` shape (`supabase/baseline.sql:33695`, CONFIRMED); append-only migration
 `supabase/migrations/20260915140000_0258_audit_log_so_recebe_linha.sql` (CONFIRMED, baseline label at
 `:25024`); `fn_lancamento_pago_e_imutavel` (`:33723`, CONFIRMED); `trg_llm_calls_budget`
@@ -1040,6 +1082,9 @@ organization deletion.
 
 **What:** GET, manager and above: balance via `fn_saldo_de_creditos` with the service client and the
 organization from the session, plus the unpriced-call count. A failed read is an error, never zero.
+The paginated ledger-history read that `DESIGN_BRIEF.md` §6.2 draws is pending PRD §10 Q4 (held for
+Jaime; `DESIGN_BRIEF.md` §12 Q6); no task builds it until then, and if it is answered yes it
+extends this task.
 **Where:** route path per `APP_FLOW.md` §4 and TRD §6.2; route unit test.
 **Depends on:** T24
 **Reuses:** `app/api/v1/ai/usage/route.ts` role pattern; `ok()`/`fail()`.
@@ -1061,9 +1106,10 @@ organization from the session, plus the unpriced-call count. A failed read is an
 
 **What:** POST with `requireSupportWrite()` then `requireRole("admin")` before any effect, Zod body,
 `Idempotency-Key` through `comIdempotencia`, ledger key derived from it, `audit()` with codes appended
-at the end of `AUDIT_ACTIONS`. Body shape per DESIGN_BRIEF §12 Q7.
+at the end of `AUDIT_ACTIONS`. Body shape pending PRD §10 Q16 (held for Jaime; DESIGN_BRIEF §12 Q7).
 **Where:** route path per `APP_FLOW.md` §4.4; `lib/audit/actions.ts`; route unit test.
-**Depends on:** T24; **decision** TRD §7 Q2 (organization admin per D3, or platform admin).
+**Depends on:** T24; **decisions** TRD §7 Q2 (organization admin per D3, or platform admin) and
+PRD §10 Q16 (body shape, held for Jaime).
 **Reuses:** `app/api/v1/ai/budget/route.ts:99-105` (support guard then role, CONFIRMED);
 `comIdempotencia` (`lib/api/idempotency.ts:189`, CONFIRMED); precedent codes `ai.budget_*`
 (`lib/audit/actions.ts:534-536`, CONFIRMED).
@@ -1084,12 +1130,15 @@ at the end of `AUDIT_ACTIONS`. Body shape per DESIGN_BRIEF §12 Q7.
 
 ### T30: Credits card and grant dialog (surfaces C, D)
 
-**What:** On `/app/ai/usage`, between `BudgetCard` and the usage dashboard: balance, unpriced count,
-unmetered sources named; admin-only grant dialog with one idempotency key per submit. Unit not shown
-until PRD §10 Q1 is confirmed (DESIGN_BRIEF §12 Q5).
-**Where:** `app/app/ai/usage/page.tsx` (`:58-69`), new components, `lib/i18n/dicionario.ts`, jsdom tests.
-**Depends on:** T28, T29; **decision** PRD §10 Q4 (PRD default: API and DB only; APP_FLOW A3 and
-DESIGN_BRIEF Q4 default: `/app/ai/usage`).
+**What:** On the surface PRD §10 Q4 picks (pending, held for Jaime; `DESIGN_BRIEF.md` §6 draws the
+`/app/ai/usage` option, between `BudgetCard` and the usage dashboard): balance, unpriced count,
+unmetered sources named; admin-only grant dialog with one `Idempotency-Key` per dialog session,
+reused on retry and kept across close while the result is unknown (`DESIGN_BRIEF.md` §7.3). Unit
+not shown until PRD §10 Q1 is confirmed (DESIGN_BRIEF §12 Q5).
+**Where:** on the `/app/ai/usage` option, `app/app/ai/usage/page.tsx` (`:58-69`); new components,
+`lib/i18n/dicionario.ts`, jsdom tests.
+**Depends on:** T28, T29; **decision** PRD §10 Q4 (pending, held for Jaime; no doc assumes a
+location).
 **Reuses:** `DESIGN_BRIEF.md` §6–7; `lib/money.ts` only for the USD source cost, never for credits.
 **Requirement:** CRED-12, CRED-13 (UI side), sistema-vivo invariant 6
 
@@ -1120,7 +1169,8 @@ not match it); update the `/app/ai/usage` catalog description if T30 lands (APP_
 **Done when:**
 
 - [ ] The grep in the doctrine still prints 0 after the migration
-- [ ] The note records that the fork overrides §4 item 2 in part (PRD §6.1), without rewriting the rule
+- [ ] The note records that the fork overrides §4 item 2 in part (PRD §6.1; the task starts only
+      once that override is confirmed, §1.2 rule 6), without rewriting the rule
 - [ ] Gate: `pnpm vitest run tests/unit/mapas-de-arquitetura.test.ts`
 
 **Tests:** structural
@@ -1146,6 +1196,9 @@ Living System Checklist, destination, draft PR.
 
 - [ ] If PRD §10 Q4 is still open, the PR ships API and DB only and its DoD table marks DoD 12 and
       DoD 13 ("aparece na tela") as **not met — blocked by Q4**, not as N/A
+- [ ] The PR states the debit `scripts/smoke-llm.ts` leaves behind after 0445 (it seeds and then
+      deletes a priced `llm_calls` row, `:209-215`, `:298`; `BACKEND_SCHEMA.md` §10 Q9 default:
+      document it in the PR, since the script targets throwaway databases)
 - [ ] Draft PR opened with the §10 table filled
 
 **Tests:** e2e
@@ -1232,10 +1285,11 @@ never reaches `llm_calls` — transcription, Realtime voice, embeddings — and 
 ### 9.1 CI state is reported as measured
 
 - **Fork Actions runs: 0** at 2026-10-12 (RELAYED by the lane; not re-measured by this writer, who
-  made no network call). Re-measure before every report:
-  `gh api repos/jaimedhenriques/deskcommcrm/actions/runs --jq .total_count`.
+  made no network call). Re-measure before every report (GitHub reports the fork moved; the
+  commands below use its new path):
+  `gh api repos/hythevc/deskcommcrm/actions/runs --jq .total_count`.
 - **Fork branch protection: unmeasured** (only the upstream list is documented in `CLAUDE.md`).
-  Re-measure: `gh api repos/jaimedhenriques/deskcommcrm/branches/main/protection --jq '.required_status_checks.contexts|join(", ")'`.
+  Re-measure: `gh api repos/hythevc/deskcommcrm/branches/main/protection --jq '.required_status_checks.contexts|join(", ")'`.
 - Workflows that would trigger on a slice PR to `main`, from the repo's own files (CONFIRMED):
   `ci.yml` on every `pull_request` (`.github/workflows/ci.yml:3-6`), `e2e.yml` and `perf.yml` on pull
   requests to `main`, `publish-image.yml` on `pull_request` (`:53`). Upstream's required check names
@@ -1414,8 +1468,9 @@ git ls-tree -r --name-only origin/main -- supabase/migrations | sed 's#.*/##' \
   | sed -nE 's#^[0-9]{14}_([0-9]{4})_.*#\1#p' | sort -n | tail -1
 pnpm checar:colisao-de-migration
 
-# Last definition of the LGPD cascade (T2 and T16 build from it)
-python3 -c "s=open('supabase/baseline.sql').read(); i=s.rfind('CREATE OR REPLACE FUNCTION \"public\".\"fn_lgpd_cascade_redact_contact\"'); print(s.count(chr(10),0,i)+1)"
+# Last definition of the LGPD cascade (T2 and T16 build from it); case-insensitive and
+# quote-tolerant, so a lowercase definition written by 0443 is found too
+python3 -I -c 'import re; s=open("supabase/baseline.sql").read(); m=list(re.finditer(r"(?im)^create or replace function \"?public\"?\.\"?fn_lgpd_cascade_redact_contact\"?\s*\(", s)); print(s.count("\n",0,m[-1].start())+1)'
 
 # Where function blocks must go (before the anon sweep)
 grep -n '^-- ---- VARREDURA anon:' supabase/baseline.sql
@@ -1442,8 +1497,8 @@ grep -oiE 'create table (if not exists )?public\.[a-z_]+' supabase/baseline.sql 
   | grep -icE 'invoice|^create table (if not exists )?public\.(billing|plans|subscriptions|quota|credits)$'
 
 # Fork CI and protection (network; never assume)
-gh api repos/jaimedhenriques/deskcommcrm/actions/runs --jq .total_count
-gh api repos/jaimedhenriques/deskcommcrm/branches/main/protection \
+gh api repos/hythevc/deskcommcrm/actions/runs --jq .total_count
+gh api repos/hythevc/deskcommcrm/branches/main/protection \
   --jq '.required_status_checks.contexts|join(", ")'
 
 # Local prerequisites for full gates

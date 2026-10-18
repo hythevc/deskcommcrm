@@ -3,7 +3,7 @@
 | Field     | Value                                                                                                                                                                                                                                                     |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status    | Draft for review. Docs-only PR from branch `claude/deskcomm-project-docs`.                                                                                                                                                                                |
-| Base      | `main` at `f322ca4` of `jaimedhenriques/deskcommcrm`. Every line number below was read at that commit in `supabase/baseline.sql` (40402 lines at that commit; re-measure with `wc -l supabase/baseline.sql`).                                             |
+| Base      | `main` at `f322ca4` of the fork. Every line number below was read at that commit in `supabase/baseline.sql` (40402 lines at that commit; re-measure with `wc -l supabase/baseline.sql`).                                                                  |
 | Scope     | The tables and functions the three lane slices touch, quoted by their LAST definition, and the schema changes each slice adds: migration 0443 (slice 1), 0444 (slice 2), 0445 (slice 3).                                                                  |
 | Owns      | DDL sketches, baseline appendix placement, MANIFEST rows, revokes, the invariant tests each change must pass, and the new TypeScript vocabulary and event types.                                                                                          |
 | Does not  | Component design, data flow and error handling (in `TRD.md`), screens (in `APP_FLOW.md`), copy and labels (in `DESIGN_BRIEF.md`), task order (in `IMPLEMENTATION_PLAN.md`), product rationale and doctrine divergence (in `PRD.md`).                      |
@@ -160,7 +160,7 @@ All entries CONFIRMED by reading `supabase/baseline.sql` at `f322ca4` unless mar
   `on conflict do nothing`. No TypeScript code inserts into `ai_invocations` (search, INFERRED that
   the backfill copies nothing new after its first run).
 - Existing AFTER INSERT trigger `trg_llm_calls_budget` (`:9526-9529`) runs
-  `fn_update_budget_consumption` (`:758-774`, `security definer`, adds `coalesce(cost_cents, 0)` to
+  `fn_update_budget_consumption` (`:760-774`, `security definer`, adds `coalesce(cost_cents, 0)` to
   a counter that never resets; ACL tightened at `:39364` and `:39370`). It is the precedent for a
   per-call metering hook.
 - RLS: tenancy-only `ALL` policy, declared debt at `:12405-12414`. No CHECK on `cost_cents`.
@@ -361,21 +361,21 @@ today (search of `workers/voice-agent/index.ts` finds no `metadata` write, INFER
 column is added to `voice_calls`.
 
 **Access export (code, not schema).** `lib/lgpd/export-collector.ts:1046-1049` adds `transcript`
-to the `voice_calls` select (D1). Whether the export also includes `call_summarized` payloads is
-open (§10 Q6).
+to the `voice_calls` select (D1), and the export also carries the `call_summarized` summary
+payload (§10 Q6; `TRD.md` §4.2, `IMPLEMENTATION_PLAN.md` T3, PRD CALL-10).
 
 **`call_summarized` payload contract.** PROPOSED; the Zod schema and its named length limits live
 in `lib/voip/resumo-da-chamada.ts` (`TRD.md` §4.5), so the UI never reads a raw `payload` path
 without the central schema (`CLAUDE.md:203`, anti-pattern 6).
 
-| Field                  | Kind           | Note                                                                                                |
-| ---------------------- | -------------- | --------------------------------------------------------------------------------------------------- |
-| `schema_version`       | integer        | Lets the reader reject an unknown shape and fall back to the label only.                            |
-| `voice_call_id`        | uuid           | Same id as `source_id`; D1 asks for it in the payload. Never placed in `evidence` (column comment). |
-| `summary`              | string         | The AI's reading, labelled "segundo a IA — confira" on screen.                                      |
-| `key_points`           | string array   | Bounded by a named maximum.                                                                         |
-| `customer_commitments` | string array   | Quoted as the customer's words, labelled as such.                                                   |
-| `suggested_next_step`  | string or null | Display only; never written to `crm_leads.next_step`, which has one writer (slice 2).               |
+| Field                  | Kind           | Note                                                                                                                                                                     |
+| ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `schema_version`       | integer        | Lets the reader reject an unknown shape and fall back to the label only.                                                                                                 |
+| `voice_call_id`        | uuid           | Same id as `source_id`; D1 asks for it in the payload. Never placed in `evidence` (column comment).                                                                      |
+| `summary`              | string         | The AI's reading, labelled "segundo a IA — confira" on screen.                                                                                                           |
+| `key_points`           | string array   | Bounded by a named maximum.                                                                                                                                              |
+| `customer_commitments` | string array   | The model's paraphrase of what the customer committed to; shown under "segundo a IA — confira", never in quotation marks (`DESIGN_BRIEF.md` §4.5, `TRD.md` §4.5 rule 2). |
+| `suggested_next_step`  | string or null | Display only; never written to `crm_leads.next_step`, which has one writer (slice 2).                                                                                    |
 
 Row columns: `type = 'call_summarized'`, `source_module = 'voice_calls'`,
 `source_id = voice_calls.id`, `actor_kind = 'ai'`, `actor_agent_id = voice_calls.ai_agent_id`,
@@ -412,8 +412,8 @@ comment on column public.crm_leads.next_step is
 comment on column public.crm_leads.next_step_updated_at is
   'Quando next_step mudou pela última vez, por IA ou por humano. Quem mudou está na timeline (next_step_set ou lead_edited).';
 
--- new LAST definition of fn_lgpd_cascade_redact_contact: the body of the then-last definition
--- (0443's if slice 1 merged first, else baseline.sql:35136), unchanged except step 5:
+-- new LAST definition of fn_lgpd_cascade_redact_contact: built only after 0443 is on main, from
+-- 0443's definition (IMPLEMENTATION_PLAN.md §1.2 rule 1, T16), unchanged except step 5:
 --   update crm_leads set
 --     title = v_anon_label,
 --     description = null,
@@ -450,13 +450,14 @@ columns: the contact-level proposal and its route stay (D2). No new event type. 
 is unchanged: writing a next step is the AI recording intent, not an interaction with the
 customer, and the list's own rule says only interactions break the silence (`:24159-24161`).
 
-**Activity rows (code, not schema).** PROPOSED; exact payload schema in `TRD.md` §5.
+**Activity rows (code, not schema).** PROPOSED; the `next_step_set` payload schema is in `TRD.md`
+§5.5.
 
-| Row                     | `type`                 | `actor_kind`      | Evidence                                          | Payload keys                                      |
-| ----------------------- | ---------------------- | ----------------- | ------------------------------------------------- | ------------------------------------------------- |
-| AI stage move           | `stage_changed`        | `ai`              | `trace_ids: [job_id]` by default (`TRD.md` §7 Q1) | `from_stage_id`, `to_stage_id`, `passo_do_agente` |
-| AI next step            | `next_step_set`        | `ai`              | same as above                                     | `schema_version`, `next_step`, `next_action_seq`  |
-| Human correction (kept) | `agent_move_corrected` | `user` (INFERRED) | unchanged                                         | unchanged; it now fires because the keys match    |
+| Row                     | `type`                 | `actor_kind`      | Evidence                                                                                                                                                                                                | Payload keys                                                                                                                                                                       |
+| ----------------------- | ---------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AI stage move           | `stage_changed`        | `ai`              | `llm_call_ids: [callId]` by default (D2), the row written after `runModelCall` returns its `callId` (`TRD.md` §5.5, §7 Q1); `trace_ids: [job_id]` is a proposed amendment to D2, pending lane authority | `from_stage_id`, `to_stage_id`, `passo_do_agente`                                                                                                                                  |
+| AI next step            | `next_step_set`        | `ai`              | same as above                                                                                                                                                                                           | `schema_version`, `next_step`, `next_action_seq`                                                                                                                                   |
+| Human correction (kept) | `agent_move_corrected` | `user` (INFERRED) | unchanged                                                                                                                                                                                               | unchanged; it now fires for undos through `moveLeadHandler`, because the keys match, and for undos on the board and bulk routes only if `APP_FLOW.md` §8 A6 is taken (PRD §10 Q14) |
 
 Both AI rows are redacted by step 4 of the cascade (they carry `contact_id`; §3.4).
 
@@ -537,8 +538,9 @@ Notes on the shape:
   additive column; recorded as §10 Q8.
 - `idempotency_key` is `not null` (unlike `loyalty_ledger`), so the unique index is total, not
   partial: every row has exactly one key.
-- A zero-cost call writes a zero-delta debit row (`TRD.md` §6.6), which the sign CHECK allows. Open
-  in `PRD.md` §10 Q2.
+- What a zero-cost call writes (a zero-delta debit row, which the sign CHECK would allow, or no
+  row) is pending `PRD.md` §10 Q2 (held for Jaime). The sketch in §6.2 covers positive costs only
+  (PRD CRED-01) and has no zero branch until that is answered.
 - The currency CHECK copies `crm_leads_currency_iso` (`:1490`).
 
 ### 6.2 Conversion function, metering trigger and balance
@@ -562,7 +564,8 @@ grant  execute on function public.fn_creditos_da_chamada(numeric) to service_rol
 
 -- AFTER INSERT on llm_calls. Never raises on expected input: a failing trigger would lose the
 -- record of a call the provider already answered (TRD §6.10). Null cost is NOT debited as zero;
--- it is counted by the unpriced query (§11). Negative cost is skipped and counted.
+-- it is counted by the unpriced query (§11). Negative cost is skipped and counted. Zero cost has
+-- no branch: pending PRD §10 Q2 (held for Jaime).
 create or replace function public.fn_debitar_creditos_da_chamada()
 returns trigger
 language plpgsql
@@ -570,7 +573,7 @@ security definer
 set search_path to 'public', 'pg_temp'
 as $$
 begin
-  if new.status = 'ok' and new.cost_cents is not null and new.cost_cents >= 0 then
+  if new.status = 'ok' and new.cost_cents is not null and new.cost_cents > 0 then
     insert into public.credit_ledger
       (organization_id, delta, kind, idempotency_key, llm_call_id, source_cost_cents, source_currency)
     values
@@ -753,11 +756,12 @@ flowchart TD
 ```
 
 - **The cascade is edited twice in sequence.** 0443 and 0444 each produce a new last definition of
-  `fn_lgpd_cascade_redact_contact`. Whichever PR merges second must rebuild its definition from the
-  one the first PR added, or it silently reverts the other's line (the failure mode in
-  `CLAUDE.md:636-666` and `tests/unit/apendice-do-baseline-nao-diverge-da-cadeia.test.ts`). After
-  both merge, the last definition must contain both `transcript = null` and `next_step = null`;
-  the slice 2 invariant asserts the transcript line too, so a bad rebase fails CI. PROPOSED.
+  `fn_lgpd_cascade_redact_contact`. 0444 is built only after 0443 is on `main`, from 0443's
+  definition (`IMPLEMENTATION_PLAN.md` §1.2 rule 1, T16); building it from `:35136` and merging in
+  either order would silently revert 0443's line (the failure mode in `CLAUDE.md:636-666` and
+  `tests/unit/apendice-do-baseline-nao-diverge-da-cadeia.test.ts`). After both merge, the last
+  definition must contain both `transcript = null` and `next_step = null`; the slice 2 invariant
+  asserts the transcript line too, so a bad rebase fails CI. PROPOSED.
 - If `main` moves and the numbers change, the order above still follows NNNN order, and every
   block stays before `:39296` (whose line number will move; re-measure with §11).
 
@@ -822,11 +826,11 @@ the `TABLES` and `PARES` edits in the PR body as additive registrations.
 | #   | Question                                                                                                                                                                                                                           | Default in this file                                                  |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Q1  | Credit unit: rounding up per call (D3) versus accumulating fractions? Same as `PRD.md` §10 Q1.                                                                                                                                     | Per call, `ceil`, one named constant.                                 |
-| Q2  | Zero-cost call: zero-delta row or no row? Same as `PRD.md` §10 Q2.                                                                                                                                                                 | Zero-delta row (`TRD.md` §6.6).                                       |
+| Q2  | Zero-cost call: zero-delta row or no row? Same as `PRD.md` §10 Q2.                                                                                                                                                                 | Pending `PRD.md` §10 Q2 (held for Jaime); no default here.            |
 | Q3  | Should `call_summarized` join the `fn_update_last_activity_at` list (`:24153-24191`)? A SIP call writes no `voice_call` activity, so the summary would be its only trace. Same as `TRD.md` §7 Q3.                                  | Not added in 0443.                                                    |
 | Q4  | Backfill debits for `llm_calls` rows created before 0445? Same as `TRD.md` §7 Q4.                                                                                                                                                  | No backfill.                                                          |
 | Q5  | Clear `messages.media_derived_text` in 0443's cascade redefinition? Same as `TRD.md` §7 Q5.                                                                                                                                        | Not included; known gap.                                              |
-| Q6  | Should the access export include `call_summarized` payloads (the export selects activities without `payload`, `export-collector.ts:917-925`)? A summary is personal data derived from the transcript, which D1 adds to the export. | Not included; D1 names only the transcript.                           |
+| Q6  | Should the access export include `call_summarized` payloads (the export selects activities without `payload`, `export-collector.ts:917-925`)? A summary is personal data derived from the transcript, which D1 adds to the export. | Included (`TRD.md` §4.2, `IMPLEMENTATION_PLAN.md` T3, PRD CALL-10).   |
 | Q7  | Is the one-time repair in 0443 (§4, item 2) acceptable as part of the regression fix, or does it need a separate decision because it changes stored data on every install?                                                         | Included; it only clears data the contract already says must be gone. |
 | Q8  | Keep the grant reason and actor only in `api_audit_log`, or also on the ledger row?                                                                                                                                                | Audit row only, ledger free of text.                                  |
 | Q9  | `scripts/smoke-llm.ts` seeds and deletes a priced `llm_calls` row; with 0445 the debit stays. Compensate inside the script with an `adjustment`, or document it?                                                                   | Document in the slice 3 PR; the script targets throwaway databases.   |
@@ -860,7 +864,8 @@ pnpm checar:colisao-de-migration
 # Does the last cascade clear the transcript? (prints the voice_calls update of the last body)
 python3 -I -c '
 s = open("supabase/baseline.sql").read()
-i = s.rfind("CREATE OR REPLACE FUNCTION \"public\".\"fn_lgpd_cascade_redact_contact\"")
+import re
+i = list(re.finditer(r"(?im)^create or replace function \"?public\"?\.\"?fn_lgpd_cascade_redact_contact\"?\s*\(", s))[-1].start()
 j = s.index("update voice_calls set", i)
 print(s[j:s.index(";", j) + 1])
 '

@@ -21,9 +21,10 @@ owner: DeskcommCRM lane
 
 ## 0. How to read this document
 
-- **Pinned commit.** Paths and line numbers refer to `main` at `f322ca4` of the fork
-  `jaimedhenriques/deskcommcrm`. They go stale; §9 gives the command that re-measures each number
-  (CLAUDE.md DoD 16).
+- **Pinned commit.** Paths and line numbers refer to `main` at `f322ca4` of the fork. They go
+  stale; §9 gives the command that re-measures each number (CLAUDE.md DoD 16).
+- **Held questions.** A question marked "pending … (held for Jaime)" is held for the owner via
+  main (PRD §10); this file draws no default for it.
 - **Tags.** `CONFIRMED`: the writer opened the cited file at `f322ca4`. `INFERRED`: deduced from
   code or docs, not proven by a test or by running the product. `PROPOSED`: behaviour the slice
   adds, as fixed by the lane decisions D1–D3 or by `TRD.md`; nothing tagged `PROPOSED` exists yet.
@@ -48,19 +49,19 @@ opens the deal dossier, a right-side sheet (`components/kanban/LeadDossier.tsx:6
 `/app/kanban` is the list of funnels, each linking to `/app/pipelines/[id]`
 (`app/app/kanban/_client.tsx:548`, CONFIRMED).
 
-| Route                            | What it shows                                                                                                                                                           | Min role (gate)                                                                                             | Nav entry (`lib/navigation/catalogo.ts`)                                             | Slice                                           |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| `/app/inbox`, `/app/inbox/[id]`  | WhatsApp conversations; side panel with the contact's deals, a stage select and an "Atividade" list (`components/inbox/CRMSidePanel.tsx:400`, `:423-458`, `:876-912`)   | none (no `minRole`)                                                                                         | `:136`, sidebar                                                                      | 2 (where the AI talks), 1 and 2 (activity list) |
-| `/app/kanban`                    | Funnel list ("Funis")                                                                                                                                                   | none for reading (`app/app/kanban/page.tsx:26-31` comment)                                                  | `:195`, sidebar                                                                      | entry to the board                              |
-| `/app/pipelines/[id]?lead=`      | Board; the card's agent slot ③ (`components/kanban/KanbanCard.tsx:250-286`); the dossier sheet with "Linha do tempo" and "Dados do negócio" (`LeadDossier.tsx:140-158`) | read for any member; deciding a proposal needs `agent` (`app/api/v1/leads/[id]/next-action/route.ts:51-54`) | none: dynamic route, reached from `/app/kanban`                                      | 1, 2                                            |
-| `/app/leads/[id]`                | Stable deal link; redirect only                                                                                                                                         | authenticated, org-filtered (`page.tsx:31-48`)                                                              | none: `[id]` segments are skipped by `tests/unit/navegacao-completude.test.ts:57-59` | 1, 2 (link target)                              |
-| `/app/calls`                     | SIP call table; row click opens a dialog with the transcript (`app/app/calls/_client.tsx:173`, `:197`, `:212-236`)                                                      | `manager` (API `app/api/v1/calls/route.ts:73`)                                                              | `:265`, CRM hub only                                                                 | 1 (source of the summary)                       |
-| `/app/ai/inbox` ("Alertas")      | The Central: rows of `agent_inbox_items` (`app/app/ai/inbox/_components/AgentInboxList.tsx:32`, `:139`)                                                                 | none                                                                                                        | `:517`                                                                               | 1, 2, 3 (failure surface)                       |
-| `/app/ai/proposals`              | The AI's next actions as a list, with approve/dismiss (`app/app/ai/proposals/page.tsx:10-27`, `hooks/leads/useProposals.ts:39`)                                         | read for any member, decide with `agent`                                                                    | `:546`                                                                               | 2                                               |
-| `/app/ai/runs` ("Execuções")     | `llm_calls` rows, including failures (`app/app/ai/runs/page.tsx:10-23`; API reads `llm_calls`, `app/api/v1/ai/runs/route.ts`)                                           | `manager` (`page.tsx:23`)                                                                                   | `:558`                                                                               | 1, 3 (model errors, refusals)                   |
-| `/app/ai/usage`                  | "Uso de IA": `BudgetCard` in USD plus the usage dashboard (`app/app/ai/usage/page.tsx:58-69`)                                                                           | `manager` (`page.tsx:26-28`); budget edit `admin` (`app/api/v1/ai/budget/route.ts:99-104`)                  | `:569`                                                                               | 3                                               |
-| `/app/settings/billing`          | Placeholder "Em breve — Fase 2" (`app/app/settings/billing/page.tsx`)                                                                                                   | `admin` (nav)                                                                                               | `:851`                                                                               | none (stays a placeholder)                      |
-| `/app/settings/tenant/pipelines` | Stage mapping, including the agent's step per stage (nav description at `:379-382`)                                                                                     | `manager`                                                                                                   | `:379`                                                                               | 2 (precondition for any AI move)                |
+| Route                            | What it shows                                                                                                                                                                                  | Min role (gate)                                                                                             | Nav entry (`lib/navigation/catalogo.ts`)                                             | Slice                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `/app/inbox`, `/app/inbox/[id]`  | WhatsApp conversations; side panel with the contact's deals, a stage select and an "Atividade" list (`components/inbox/CRMSidePanel.tsx:400`, `:423-458`, `:876-912`)                          | none (no `minRole`)                                                                                         | `:136`, sidebar                                                                      | 2 (where the AI talks), 1 and 2 (activity list) |
+| `/app/kanban`                    | Funnel list ("Funis")                                                                                                                                                                          | none for reading (`app/app/kanban/page.tsx:26-31` comment)                                                  | `:195`, sidebar                                                                      | entry to the board                              |
+| `/app/pipelines/[id]?lead=`      | Board; the card's agent slot ③ (`components/kanban/KanbanCard.tsx:250-286`); the dossier sheet with "Linha do tempo" and "Dados do negócio" (`LeadDossier.tsx:140-158`)                        | read for any member; deciding a proposal needs `agent` (`app/api/v1/leads/[id]/next-action/route.ts:51-54`) | none: dynamic route, reached from `/app/kanban`                                      | 1, 2                                            |
+| `/app/leads/[id]`                | Stable deal link; redirect only                                                                                                                                                                | authenticated, org-filtered (`page.tsx:31-48`)                                                              | none: `[id]` segments are skipped by `tests/unit/navegacao-completude.test.ts:57-59` | 1, 2 (link target)                              |
+| `/app/calls`                     | SIP call table; row click opens a dialog with the transcript (`app/app/calls/_client.tsx:173`, `:197`, `:212-236`)                                                                             | `manager` (API `app/api/v1/calls/route.ts:73`)                                                              | `:265`, CRM hub only                                                                 | 1 (source of the summary)                       |
+| `/app/ai/inbox` ("Alertas")      | The Central: rows of `agent_inbox_items` (`app/app/ai/inbox/_components/AgentInboxList.tsx:32`, `:139`)                                                                                        | none                                                                                                        | `:517`                                                                               | 1, 2, 3 (failure surface)                       |
+| `/app/ai/proposals`              | The AI's next actions as a list, with approve/dismiss (`app/app/ai/proposals/page.tsx:10-27`, `hooks/leads/useProposals.ts:39`)                                                                | read for any member, decide with `agent`                                                                    | `:546`                                                                               | 2                                               |
+| `/app/ai/runs` ("Execuções")     | `llm_calls` rows, including failures (`app/app/ai/runs/page.tsx:10-23`; API reads `llm_calls`, `app/api/v1/ai/runs/route.ts`)                                                                  | `manager` (`page.tsx:23`)                                                                                   | `:558`                                                                               | 1, 3 (model errors, refusals)                   |
+| `/app/ai/usage`                  | "Uso de IA": `BudgetCard` in USD plus the usage dashboard (`app/app/ai/usage/page.tsx:58-69`)                                                                                                  | `manager` (`page.tsx:26-28`); budget edit `admin` (`app/api/v1/ai/budget/route.ts:99-104`)                  | `:569`                                                                               | 3                                               |
+| `/app/settings/billing`          | Placeholder "Em breve — Fase 2" (`app/app/settings/billing/page.tsx`)                                                                                                                          | `admin` (nav)                                                                                               | `:851`                                                                               | none (stays a placeholder)                      |
+| `/app/settings/tenant/pipelines` | Stages of each funnel (nav entry at `:379-382`) and the agent's step per stage (`app/app/settings/tenant/pipelines/_mapping.tsx`, one row per agent step choosing a stage, header at `:26-34`) | `manager`                                                                                                   | `:379`                                                                               | 2 (precondition for any AI move)                |
 
 All rows CONFIRMED by opening the cited files, except where a cell says otherwise.
 
@@ -302,7 +303,7 @@ flowchart TD
     ALS -->|"valid"| LS[("lead_state and lead_state_transitions")]
     LS --> TR{"stage changed?"}
     TR -->|"no"| NA{"next_action written in this call?"}
-    TR -->|"yes"| MIR["stage mirror with agent id, evidence and pipeline scope, PROPOSED inputs"]
+    TR -->|"yes"| MIR["stage mirror with agent id and pipeline scope, PROPOSED inputs"]
     MIR --> RES{"mirror result"}
     RES -->|"moved"| SC["crm_leads.stage_id updated, stage_changed row actor ai, from_stage_id and to_stage_id, PROPOSED attribution"]
     RES -->|"not_configured or human_conflict"| WARN["warning in the run log only"]
@@ -326,9 +327,11 @@ all translate to `not_configured` (`:261-305`); the other reasons open one dedup
 with `kind: 'other'` and `refKind: 'lead'` (`:112-230`), which links to the deal through "Abrir
 negócio" (`lib/ai/inbox-destino.ts:21`). A mirror failure never reverts `lead_state` or fails the
 job (`inbound-turn.ts:3642-3648` comment). The mirror's new inputs, the attribution, the payload
-keys and the whole next-step branch are PROPOSED (D2; TRD §5.2-5.3). The evidence kind for both
-rows is open: D2 names `llm_call_ids`, TRD §5.5 shows the turn's own call id does not exist yet when
-the tool runs and proposes `trace_ids: [job_id]` (TRD §7 Q1).
+keys and the whole next-step branch are PROPOSED (D2; TRD §5.2-5.3). Evidence for both rows: the
+turn's own call id does not exist yet when the tool runs (TRD §5.5), so by default the mirrors
+return the `stage_changed` and `next_step_set` rows and the turn writes them after `runModelCall`
+returns its `callId`, with `llm_call_ids` (D2). `trace_ids: [job_id]` is a proposed amendment to
+D2, pending lane authority (TRD §7 Q1, PRD §10 Q15).
 
 ### 3.3 Refusals the operator can meet
 
@@ -384,26 +387,27 @@ flowchart TD
   only for an MCP call made with a person's token (INFERRED), never for a drag or a select.
 - The check also reads `from_stage_id`/`to_stage_id` from the last `stage_changed` rows
   (`_handler.ts:1119-1150`) and requires actor `ai` (`lib/leads/correcao-humana.ts:79`). Slice 2's
-  attribution and payload fix is necessary but not sufficient: PRD DEAL-02 ("a human then moves the
-  card back") also needs the check on the two UI routes (§8, A6). The repro test PRD DEAL-02 asks
-  for should drive the drag route, not only `moveLeadHandler`.
+  attribution and payload fix is necessary but not sufficient: PRD DEAL-02 counts an undo through
+  `moveLeadHandler`, and an undo by drag or select only if the check reaches the two UI routes
+  (§8 A6, PRD §10 Q14). The repro test PRD DEAL-02 asks for should drive the drag route once A6 is
+  taken, and `moveLeadHandler` until then.
 - Grouping risk: once attributed `ai` with an agent id, a `stage_changed` row shares the actor key
   of the same turn's `ai_turn` row (`lib/leads/timeline-grouping.ts:84-86`) and folds into one
   block inside the 60-second window (`:50`). TRD §5.4 keeps it foldable and proves it reachable;
-  `next_step_set` joins `NUNCA_COLAPSA`. PRD Q9 is still open on this.
+  `next_step_set` joins `NUNCA_COLAPSA`. PRD §10 Q9 takes the same answer as its lane default.
 - The human edit path for `next_step` (lead patch, user actor) is PROPOSED (PRD DEAL-07, TRD §5.2).
 
 ### 3.5 What the operator sees after slice 2 (PROPOSED)
 
-| Surface                                      | Before                                    | After                                                                |
-| -------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------- |
-| Board card position                          | Moves when mapped (CONFIRMED)             | Same, and fails closed outside the agent's pipelines                 |
-| Dossier `stage_changed` row                  | Actor shown as system, no agent name      | Actor `ai` with the agent's name; may sit inside the turn's AI block |
-| Dossier `next_step_set` row                  | Does not exist                            | Own row, never folded                                                |
-| Deal's next step                             | Only the contact-level proposal on slot ③ | `crm_leads.next_step` written by the AI; placement open (§8, A2)     |
-| Card slot ③ proposal and `/app/ai/proposals` | Aprovar/Ignorar (CONFIRMED)               | Unchanged (D2)                                                       |
-| Central                                      | Mirror refusals (CONFIRMED)               | Same items; `fora_do_escopo` now also from the harness path          |
-| Undo of an AI move by drag or select         | Not detected (CONFIRMED, §3.4)            | Still not detected unless A6 is taken into the slice                 |
+| Surface                                      | Before                                    | After                                                                                                                                                                                                                     |
+| -------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Board card position                          | Moves when mapped (CONFIRMED)             | Same, and fails closed outside the agent's pipelines                                                                                                                                                                      |
+| Dossier `stage_changed` row                  | Actor shown as system, no agent name      | Actor `ai` with the agent's name; may sit inside the turn's AI block                                                                                                                                                      |
+| Dossier `next_step_set` row                  | Does not exist                            | Own row, never folded                                                                                                                                                                                                     |
+| Deal's next step                             | Only the contact-level proposal on slot ③ | `crm_leads.next_step` written by the AI; on the card as a new band-③ slot after awaiting, reactivation and cooling and before meter (DESIGN_BRIEF §5.2), and in a dossier section (DESIGN_BRIEF §5.3); open part in §8 A2 |
+| Card slot ③ proposal and `/app/ai/proposals` | Aprovar/Ignorar (CONFIRMED)               | Unchanged (D2)                                                                                                                                                                                                            |
+| Central                                      | Mirror refusals (CONFIRMED)               | Same items; `fora_do_escopo` now also from the harness path                                                                                                                                                               |
+| Undo of an AI move by drag or select         | Not detected (CONFIRMED, §3.4)            | Still not detected unless A6 is taken into the slice                                                                                                                                                                      |
 
 ---
 
@@ -430,10 +434,11 @@ flowchart TD
     M3["other llm_calls writers"] --> LC
     LC -->|"AFTER INSERT trigger, same transaction"| T{"status ok?"}
     T -->|"no, erro"| NR["no ledger row"]
-    T -->|"yes"| C{"cost_cents present and not negative?"}
+    T -->|"yes"| C{"cost_cents?"}
     C -->|"null"| UP["no ledger row, counted as unpriced"]
     C -->|"negative"| NR
-    C -->|"yes"| D["debit_llm_call: delta is minus the cost rounded up to whole credits, key from the llm_calls id"]
+    C -->|"zero"| ZC["pending PRD Q2, held for Jaime"]
+    C -->|"positive"| D["debit_llm_call: delta is minus the cost rounded up to whole credits, key from the llm_calls id"]
     D --> K{"key already in the ledger?"}
     K -->|"yes"| NR
     K -->|"no"| CL[("credit_ledger")]
@@ -441,23 +446,27 @@ flowchart TD
     UP --> UPC["unpriced count, returned with the balance"]
     BAL --> API["GET balance route, manager and above"]
     UPC --> API
-    API --> SCR["/app/ai/usage, credits block next to BudgetCard"]
+    API -.-> SCR["screen placement pending PRD Q4, held for Jaime"]
 ```
 
 - The trigger shape copies `trg_llm_calls_budget` (`supabase/baseline.sql:9526-9530`, CONFIRMED
   location). The single spend ruler `fn_gasto_de_ia_do_mes` (`baseline.sql:13125`) is not touched
   and stays the budget's only measure (PRD CRED-07).
-- Zero cost: TRD §6.6 writes a zero-delta row so that every priced call has exactly one row; PRD Q2
-  still lists it as undecided. The diagram's "not negative" follows the TRD.
+- Zero cost: whether a zero-cost call writes a zero-delta row or no row is pending PRD §10 Q2
+  (held for Jaime). The diagram draws no outcome for it.
 - Credits never gate a call in this lane (D3, PRD CRED-06): the budget ladder `off`/`avisar`/
   `bloquear` (`orcamento.ts:57`) remains the only gate, and it measures USD.
 - Route and screen are PROPOSED here because TRD §6.2 delegates the path to this file:
   `app/api/v1/ai/credits/route.ts` with `GET` (balance plus unpriced count, `manager`) and `POST`
-  (grant or adjustment, `admin`), the same one-file split as `app/api/v1/ai/budget/route.ts`
-  (`GET` manager at `:89-91`, `PATCH` admin at `:99-104`). The block on `/app/ai/usage` depends on
-  PRD Q4, whose current default is "API and DB only" (§8, A3).
+  (grant or adjustment, `admin`; body shape pending PRD §10 Q16, held for Jaime), the same
+  one-file split as `app/api/v1/ai/budget/route.ts` (`GET` manager at `:89-91`, `PATCH` admin at
+  `:99-104`). Any screen block, and any ledger-history read, is pending PRD §10 Q4 (held for
+  Jaime; §8 A3).
 
-### 4.3 What a manager sees (PROPOSED, if PRD Q4 lands on `/app/ai/usage`)
+### 4.3 What a manager would see (pending PRD §10 Q4, held for Jaime)
+
+Drawn for the `/app/ai/usage` option only, so the states are on record; it is not a default, and
+nothing here is built until PRD §10 Q4 is answered.
 
 ```mermaid
 flowchart TD
@@ -496,7 +505,8 @@ flowchart TD
 
 The order (support guard, then role, then body) follows `app/api/v1/ai/budget/route.ts:99-104`,
 CONFIRMED. Whether a grant should need a platform admin instead of an organization admin is open
-(TRD §7 Q2).
+(TRD §7 Q2). The body's shape (how it carries the kind and the sign of an adjustment) is pending
+PRD §10 Q16 (held for Jaime); G1 names what the body must convey, not its fields.
 
 ### 4.5 State machine — one ledger entry
 
@@ -506,6 +516,7 @@ stateDiagram-v2
     state "Grant or adjustment posted" as Grant
     state "No ledger row" as NoRow
     state "Counted as unpriced" as Unpriced
+    state "Zero cost, pending PRD Q2, held for Jaime" as ZeroCost
     state "Already in the ledger" as Duplicate
     state "Request refused" as Refused
     state "Ledger row, append-only" as Recorded
@@ -514,7 +525,8 @@ stateDiagram-v2
     Source --> NoRow: status erro, or cost negative
     Source --> Unpriced: status ok and cost null
     Source --> Duplicate: debit key already present
-    Source --> Recorded: status ok and cost not negative, kind debit_llm_call
+    Source --> ZeroCost: status ok and cost zero
+    Source --> Recorded: status ok and cost positive, kind debit_llm_call
     Grant --> Refused: support mode, not admin, or invalid body
     Grant --> Duplicate: Idempotency-Key replayed
     Grant --> Recorded: kind grant or adjustment, audit row written
@@ -523,6 +535,7 @@ stateDiagram-v2
     Recorded --> [*]: organization deleted, rows cascade
     NoRow --> [*]
     Unpriced --> [*]
+    ZeroCost --> [*]
     Duplicate --> [*]
     Refused --> [*]
 ```
@@ -585,11 +598,11 @@ The flows above are only "done" when proven on the product (standing rule; CLAUD
 §4.5). For each slice, the screen evidence a verifier looks for, in a fresh environment and never
 against production:
 
-| Slice | Path a verifier walks                                                                                                       | Expected on screen                                                                                                                             |
-| ----- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Fixture call with the fixture transcript, handler run with a scripted provider, then `/app/kanban` → board → card → dossier | One `call_summarized` row, AI marker, expandable summary with the AI-reading label; same row once after a second run                           |
-| 2     | Recorded conversation replayed, then board → card → dossier; then drag the card back                                        | Card in the new stage; `stage_changed` by the agent; `next_step_set` row; after the drag, an `agent_move_corrected` row only if A6 is in scope |
-| 3     | Insert priced, unpriced and failed `llm_calls` rows, then `/app/ai/usage` as manager and as admin; post a grant twice       | Balance equals the debits; unpriced count shown; one grant row after the double submit                                                         |
+| Slice | Path a verifier walks                                                                                                                             | Expected on screen                                                                                                                             |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Fixture call with the fixture transcript, handler run with a scripted provider, then `/app/kanban` → board → card → dossier                       | One `call_summarized` row, AI marker, expandable summary with the AI-reading label; same row once after a second run                           |
+| 2     | Recorded conversation replayed, then board → card → dossier; then drag the card back                                                              | Card in the new stage; `stage_changed` by the agent; `next_step_set` row; after the drag, an `agent_move_corrected` row only if A6 is in scope |
+| 3     | Insert priced, unpriced and failed `llm_calls` rows, read the balance, post a grant twice; the screen walk is pending PRD §10 Q4 (held for Jaime) | Balance equals the debits; unpriced count returned; one grant row after the double submit                                                      |
 
 Anything that goes through the agent is proven by both the UI path and the direct tool call with the
 same raw text (`docs/doctrine/prova-em-par.md`, PRD DEAL-10).
@@ -600,15 +613,15 @@ same raw text (`docs/doctrine/prova-em-par.md`, PRD DEAL-10).
 
 Questions already open in `PRD.md` §10 and `TRD.md` §7 are referenced, not repeated.
 
-| #   | Question                                                                                                                                                                                                                                                                            | Why it matters                                                                                                                                              | Default in this doc                                               |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| A1  | A summary for a contact with no open deal or tied deals is paid for and then lands nowhere: `agent.activity_unrouted` is forced to `done` and has no reader. Should slice 1 open a Central item (kind `other`, ref `contact`), show the summary on `/app/calls`, or accept the gap? | Sistema-vivo invariant 3 (visible log) and the operator never learning a call was summarised                                                                | Gap accepted and recorded (D1 is silent)                          |
-| A2  | Where does `crm_leads.next_step` show, and how does it coexist with the contact-level proposal on slot ③ when both carry the same text? Slot ③ holds one state at a time (`KanbanCard.tsx:250`)                                                                                     | The card could say "Propõe:" with Aprovar/Ignorar for a step the AI already wrote on the deal                                                               | Card unchanged; `next_step` in the dossier, per `DESIGN_BRIEF.md` |
-| A3  | Credits block placement (PRD Q4): inside `/app/ai/usage` as drawn in §4.3, or API and DB only?                                                                                                                                                                                      | Without a screen, slice 3 misses sistema-vivo invariant 6 and DoD 13                                                                                        | `/app/ai/usage`, no new nav entry                                 |
-| A4  | Link from a `call_summarized` row to its call on `/app/calls`? The page has no deep link and needs `manager`                                                                                                                                                                        | An `agent` reading the summary cannot reach the transcript at all                                                                                           | No link in slice 1                                                |
-| A5  | Should the inbox side panel's "Atividade" list render the summary, or only the label as today?                                                                                                                                                                                      | The operator works from `/app/inbox`; the dossier is one more click away                                                                                    | Label only; summary in the dossier                                |
-| A6  | The human-correction check runs only inside `moveLeadHandler` (MCP tool and automations). Should slice 2 also run it on `/api/v1/leads/[id]/move` (board drag) and `/api/v1/leads/bulk` (inbox select, bulk move), so a person undoing an AI move is counted?                       | Without it, PRD DEAL-02 cannot pass through the UI, spec 17 step 5 stays open, and sistema-vivo invariant 7 (the loop closes) is not met for AI stage moves | Recommended in scope of slice 2; not decided by D2                |
-| —   | Evidence kind for slice 2 rows (TRD Q1), credits unit (PRD Q1), zero-cost row (PRD Q2), grouping of AI stage rows (PRD Q9), grant role (TRD Q2)                                                                                                                                     | Change labels and edges in §3.2, §4.2, §4.5 but not the flow shape                                                                                          | As stated in those docs                                           |
+| #   | Question                                                                                                                                                                                                                                                                            | Why it matters                                                                                                                                              | Default in this doc                                                                                                                                                                                                         |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | A summary for a contact with no open deal or tied deals is paid for and then lands nowhere: `agent.activity_unrouted` is forced to `done` and has no reader. Should slice 1 open a Central item (kind `other`, ref `contact`), show the summary on `/app/calls`, or accept the gap? | Sistema-vivo invariant 3 (visible log) and the operator never learning a call was summarised                                                                | Gap accepted and recorded (D1 is silent)                                                                                                                                                                                    |
+| A2  | Where does `crm_leads.next_step` show, and how does it coexist with the contact-level proposal on slot ③ when both carry the same text? Slot ③ holds one state at a time (`KanbanCard.tsx:250`)                                                                                     | The card could say "Propõe:" with Aprovar/Ignorar for a step the AI already wrote on the deal                                                               | Card shows `next_step` in band ③ as a new slot ordered after awaiting, reactivation and cooling and before meter (`DESIGN_BRIEF.md` §5.2); dossier section B2 (`DESIGN_BRIEF.md` §5.3); open part: `DESIGN_BRIEF.md` §12 Q1 |
+| A3  | Credits block placement (PRD Q4): inside `/app/ai/usage` as drawn in §4.3, or API and DB only?                                                                                                                                                                                      | Without a screen, slice 3 misses sistema-vivo invariant 6 and DoD 13                                                                                        | Pending PRD §10 Q4 (held for Jaime); no default                                                                                                                                                                             |
+| A4  | Link from a `call_summarized` row to its call on `/app/calls`? The page has no deep link and needs `manager`                                                                                                                                                                        | An `agent` reading the summary cannot reach the transcript at all                                                                                           | No link in slice 1                                                                                                                                                                                                          |
+| A5  | Should the inbox side panel's "Atividade" list render the summary, or only the label as today?                                                                                                                                                                                      | The operator works from `/app/inbox`; the dossier is one more click away                                                                                    | Label only; summary in the dossier                                                                                                                                                                                          |
+| A6  | The human-correction check runs only inside `moveLeadHandler` (MCP tool and automations). Should slice 2 also run it on `/api/v1/leads/[id]/move` (board drag) and `/api/v1/leads/bulk` (inbox select, bulk move), so a person undoing an AI move is counted?                       | Without it, PRD DEAL-02 cannot pass through the UI, spec 17 step 5 stays open, and sistema-vivo invariant 7 (the loop closes) is not met for AI stage moves | Recommended in scope of slice 2; not decided by D2 (PRD §10 Q14)                                                                                                                                                            |
+| —   | Evidence kind for slice 2 rows (TRD Q1, PRD Q15), credits unit (PRD Q1), zero-cost row (PRD Q2, held for Jaime), grouping of AI stage rows (PRD Q9), grant role (TRD Q2), grant body shape (PRD Q16, held for Jaime)                                                                | Change labels and edges in §3.2, §4.2, §4.5 but not the flow shape                                                                                          | As stated in those docs; held ones have no default                                                                                                                                                                          |
 
 ---
 
