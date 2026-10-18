@@ -3571,6 +3571,15 @@ export const DICIONARIO: Traducoes = {
   "Cada retomada de conversa parece a primeira: o agente não sabe o que aconteceu antes.": {
     es: "Cada vez que se retoma una conversación parece la primera: el agente no sabe qué pasó antes.",
   },
+  "Resumir a ligação": {
+    es: "Resumir la llamada",
+  },
+  "Lê a transcrição de uma ligação encerrada e escreve um resumo curto na linha do tempo do negócio, com os pontos, os compromissos do cliente e uma sugestão de próximo passo.": {
+    es: "Lee la transcripción de una llamada finalizada y escribe un resumen breve en la línea de tiempo del negocio, con los puntos, los compromisos del cliente y una sugerencia de próximo paso.",
+  },
+  "A ligação termina e nenhum resumo aparece no negócio; quem pega o atendimento precisa ler a transcrição inteira.": {
+    es: "La llamada termina y no aparece ningún resumen en el negocio; quien retoma la atención tiene que leer toda la transcripción.",
+  },
   "Indexar o seu material": {
     es: "Indexar tu material",
   },
@@ -7062,6 +7071,17 @@ export const DICIONARIO: Traducoes = {
   "Follow-up retomado": { es: "Follow-up retomado" },
   "Follow-up adiado": { es: "Follow-up pospuesto" },
   "Passo do follow-up pulado": { es: "Paso del follow-up saltado" },
+  "Resumo da ligação": { es: "Resumen de la llamada" },
+  // `reason` fixo da linha `call_summarized` (lib/calls/resumo-da-ligacao.ts).
+  "Resumo da IA — confira na transcrição": {
+    es: "Resumen de la IA: compruébalo en la transcripción",
+  },
+  // components/kanban/ResumoDaLigacaoNaLinha.tsx
+  "Ver resumo": { es: "Ver resumen" },
+  "Ocultar resumo": { es: "Ocultar resumen" },
+  "Pontos": { es: "Puntos" },
+  "Compromissos do cliente": { es: "Compromisos del cliente" },
+  "Próximo passo sugerido": { es: "Próximo paso sugerido" },
   // ─── lib/followup/eventos-legiveis.ts (dossiê do follow-up) ───
   // STATUS (rotuloDoStatus)
   "concluída": { es: "concluida" },

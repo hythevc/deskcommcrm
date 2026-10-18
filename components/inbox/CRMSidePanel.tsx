@@ -22,6 +22,7 @@ import { apiClient } from "@/lib/api/client";
 import { toast } from "sonner";
 import type { ConversationWithContact } from "@/hooks/inbox/useConversationsRealtime";
 import { activityLabel, actorLabel, actorShape } from "@/lib/leads/activity-vocabulary";
+import { ResumoDaLigacaoNaLinha } from "@/components/kanban/ResumoDaLigacaoNaLinha";
 import { ConversationTagsEditor } from "./ConversationTagsEditor";
 import { ContactTagsEditor } from "./ContactTagsEditor";
 import { useDefaultPipeline } from "@/hooks/pipelines/useDefaultPipeline";
@@ -901,6 +902,7 @@ export function CRMSidePanel({ conversation }: Props) {
                   {t(activityLabel(a.type))}
                 </div>
                 {a.reason && <div className="mt-0.5 truncate text-muted-foreground">{t(a.reason)}</div>}
+                <ResumoDaLigacaoNaLinha tipo={a.type} payload={a.payload} />
                 <div className="text-muted-foreground">
                   {a.performed_by_name ?? t(actorLabel(a.actor_kind))} · {shortDate(a.performed_at, localeDaData)}
                 </div>

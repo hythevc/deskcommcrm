@@ -72,6 +72,8 @@ export interface MessageRow {
   status: string;
   body: string | null;
   has_media: boolean;
+  /** Transcrição da nota de voz (ou leitura da mídia); a anonimização a apaga (0443). */
+  media_derived_text: string | null;
   sent_at: string | null;
   created_at: string;
 }
@@ -384,6 +386,13 @@ export interface VoiceCallRow {
   answered_at: string | null;
   ended_at: string | null;
   duration_ms: number | null;
+  /** O que foi dito, turno a turno (agente de voz SIP); a anonimização o apaga (0443). */
+  transcript: Json | null;
+  /**
+   * Os resumos que a IA escreveu desta ligação (`call_summarized`), como foram
+   * gravados: são texto sobre a pessoa e a anonimização os apaga.
+   */
+  resumos_da_ia: Json[];
 }
 
 /** Pesquisa e resultado da abordagem ligados ao titular (redação: migration 0370). */
@@ -615,6 +624,40 @@ interface Controlador {
   country: string | null;
 }
 
+// O resumo da IA mora na linha do tempo do negócio e entra junto da ligação que
+// resume. Payload vazio é resumo já redigido pela cascata: não há o que entregar.
+async function resumosDasLigacoes(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  contactId: string,
+  requestId: string,
+): Promise<Map<string, Json[]>> {
+  const porLigacao = new Map<string, Json[]>();
+  const { data, error } = await admin
+    .from("crm_lead_activities")
+    .select("source_id, payload")
+    .eq("organization_id", organizationId)
+    .eq("contact_id", contactId)
+    .eq("type", "call_summarized")
+    .eq("source_module", "voice_calls")
+    .order("performed_at", { ascending: true })
+    .limit(500);
+  if (error) {
+    logger.warn("[lgpd-export-worker] call summaries load failed", {
+      request_id: requestId,
+      error: error.message,
+    });
+    return porLigacao;
+  }
+  for (const { source_id, payload } of data ?? []) {
+    const temConteudo =
+      typeof payload === "object" && payload !== null && Object.keys(payload).length > 0;
+    if (!source_id || !temConteudo) continue;
+    porLigacao.set(source_id, [...(porLigacao.get(source_id) ?? []), payload]);
+  }
+  return porLigacao;
+}
+
 /**
  * Lê o controlador. NUNCA lança e nunca inventa: se a leitura falhar, os campos
  * saem vazios e o rodapé mostra o traço de campo ausente. Abortar o export
@@ -834,7 +877,9 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
 
     const { data, error } = await admin
       .from("messages")
-      .select("id, conversation_id, direction, type, status, body, media_url, sent_at, created_at")
+      .select(
+        "id, conversation_id, direction, type, status, body, media_url, media_derived_text, sent_at, created_at",
+      )
       .eq("organization_id", organizationId)
       .eq("contact_id", contactId)
       .order("created_at", { ascending: false })
@@ -853,6 +898,7 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
         status: m.status,
         body: m.body,
         has_media: Boolean(m.media_url),
+        media_derived_text: m.media_derived_text,
         sent_at: m.sent_at,
         created_at: m.created_at,
       }));
@@ -1045,7 +1091,7 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
     const { data, error } = await admin
       .from("voice_calls")
       .select(
-        "id, direction, peer_phone, status, end_reason, started_at, answered_at, ended_at, duration_ms",
+        "id, direction, peer_phone, status, end_reason, started_at, answered_at, ended_at, duration_ms, transcript",
       )
       .eq("organization_id", organizationId)
       .eq("contact_id", contactId)
@@ -1057,7 +1103,12 @@ export async function collectExportData(args: CollectArgs): Promise<ExportPayloa
         error: error.message,
       });
     } else if (data) {
-      voice_calls = data as VoiceCallRow[];
+      const resumos = await resumosDasLigacoes(admin, organizationId, contactId, requestId);
+      // `lib/database.types.ts` não tem as colunas da 0348 (`transcript`).
+      voice_calls = (data as unknown as Omit<VoiceCallRow, "resumos_da_ia">[]).map((chamada) => ({
+        ...chamada,
+        resumos_da_ia: resumos.get(chamada.id) ?? [],
+      }));
     }
   }
 

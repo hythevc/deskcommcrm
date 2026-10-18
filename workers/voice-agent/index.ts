@@ -33,10 +33,12 @@
  * asterisk_channel_id (== o UUID, de propósito) e sobe UMA
  * AudioSocketCallBridge — não importa se a chamada é de entrada ou saída.
  *
- * Sem publicação em event_log (call.ended etc.): nenhum handler em
- * lib/event-log/register-handlers.ts consumiria esses tipos ainda — ver nota
- * na migration 0347. Sumarização/sentimento pós-chamada fica fora do escopo
- * deste esqueleto até existir consumidor real.
+ * Uma única publicação em event_log: ao encerrar uma ligação com fala, o
+ * pedido `voice_call.summary_requested` (lib/calls/fechamento-da-ligacao.ts),
+ * consumido por lib/calls/resumo-da-ligacao.handler.ts, que escreve o resumo
+ * da IA no negócio do contato. Fatos como call.ended seguem sem publicação:
+ * nenhum handler os consumiria (ver nota na migration 0347). Sentimento
+ * pós-chamada fica fora do escopo até existir consumidor real.
  */
 
 import net from "node:net";
@@ -54,6 +56,7 @@ import { getActiveVoiceAgent } from "@/lib/ai/agents";
 import { resolveOrCreateCallerContact } from "@/lib/voip/resolve-caller";
 import { garantirLeadDaConversa } from "@/lib/leads/nascimento-do-lead";
 import { buscarConhecimento, resolverAcervoDoAgente } from "@/lib/ai/knowledge/busca";
+import { fecharLigacaoSip } from "@/lib/calls/fechamento-da-ligacao";
 
 const supabaseAdmin = createAdminClient();
 
@@ -189,6 +192,7 @@ async function resolveInboundNumber(dialedNumber: string): Promise<RoteamentoInb
 interface ActiveAudioSocketCall {
   bridge: AudioSocketCallBridge;
   callRowId: string;
+  organizationId: string;
   answeredAt: string;
   transcript: { speaker: string; text: string; ts: string }[];
 }
@@ -210,21 +214,13 @@ async function finalizeAudioSocketCall(uuid: string) {
   if (!call) return;
   activeAudioSocketCalls.delete(uuid);
 
-  const endedAt = new Date();
-  // duration_ms não é generated column em voice_calls (era em crm_calls) —
-  // calcula na mão a partir do answered_at que a gente mesmo gravou.
-  const durationMs = endedAt.getTime() - new Date(call.answeredAt).getTime();
-
-  await supabaseAdmin
-    .from("voice_calls")
-    .update({
-      status: "ended",
-      end_reason: "user_ended",
-      ended_at: endedAt.toISOString(),
-      duration_ms: durationMs,
-      transcript: call.transcript,
-    })
-    .eq("id", call.callRowId);
+  await fecharLigacaoSip(supabaseAdmin, {
+    organizationId: call.organizationId,
+    voiceCallId: call.callRowId,
+    answeredAt: call.answeredAt,
+    endedAt: new Date(),
+    transcript: call.transcript,
+  });
 }
 
 async function handleAudioSocketConnection(socket: net.Socket, uuid: string, leftover: Buffer) {
@@ -289,12 +285,26 @@ async function handleAudioSocketConnection(socket: net.Socket, uuid: string, lef
   });
 
   const answeredAt = new Date().toISOString();
-  activeAudioSocketCalls.set(uuid, { bridge, callRowId: callRow.id, answeredAt, transcript: [] });
+  activeAudioSocketCalls.set(uuid, {
+    bridge,
+    callRowId: callRow.id,
+    organizationId: callRow.organization_id,
+    answeredAt,
+    transcript: [],
+  });
 
+  // ai_agent_id é o que deixa o resumo da ligação entrar no negócio como ato
+  // da IA: sem agente, a linha da timeline cai para "Sistema".
   await supabaseAdmin
     .from("voice_calls")
-    .update({ status: "connected", answered_at: answeredAt, handled_by: "ai" })
-    .eq("id", callRow.id);
+    .update({
+      status: "connected",
+      answered_at: answeredAt,
+      handled_by: "ai",
+      ai_agent_id: agent.id,
+    })
+    .eq("id", callRow.id)
+    .eq("organization_id", callRow.organization_id);
 
   // Se algum byte de áudio já chegou GRUDADO no mesmo pacote TCP do frame de
   // UUID (TCP é stream contínuo, não datagramas), reinjeta no socket depois

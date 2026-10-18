@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Resumo da ligação na linha do tempo do negócio",
+    "subtitle": "a transcrição vira um resumo da IA, com lastro em llm_calls, no negócio ativo do contato; o mesmo schema valida na escrita e na tela",
+    "output": "resumo-da-ligacao.html",
+    "quality_profile": "standard"
+  },
+  "lanes": [
+    { "id": "canal", "label": "Ligação" },
+    { "id": "motor", "label": "Motor" },
+    { "id": "ia", "label": "Modelo" },
+    { "id": "dados", "label": "Banco" },
+    { "id": "ui", "label": "Tela" }
+  ],
+  "mainPath": [
+    "agentevoz",
+    "fechamento",
+    "pedido",
+    "handler",
+    "seam",
+    "emissor",
+    "atividades",
+    "timeline"
+  ],
+  "nodes": [
+    {
+      "id": "agentevoz",
+      "lane": "canal",
+      "col": 1,
+      "type": "external",
+      "label": "Agente de voz SIP",
+      "sublabel": "workers/voice-agent/index.ts · finalizeAudioSocketCall"
+    },
+    {
+      "id": "fechamento",
+      "lane": "motor",
+      "col": 1,
+      "type": "service",
+      "label": "fecharLigacaoSip",
+      "sublabel": "lib/calls/fechamento-da-ligacao.ts · UPDATE por organização"
+    },
+    {
+      "id": "ligacoes",
+      "lane": "dados",
+      "col": 1,
+      "type": "table",
+      "label": "voice_calls.transcript",
+      "sublabel": "jsonb [{speaker, text, ts}] · ai_agent_id"
+    },
+    {
+      "id": "pedido",
+      "lane": "dados",
+      "col": 2,
+      "type": "table",
+      "label": "event_log · voice_call.summary_requested",
+      "sublabel": "payload só { voice_call_id }, nunca a fala"
+    },
+    {
+      "id": "handler",
+      "lane": "motor",
+      "col": 2,
+      "type": "service",
+      "label": "resumoDaLigacaoHandler",
+      "sublabel": "lib/calls/resumo-da-ligacao.handler.ts · pula sem fala, sem contato ou já resumida"
+    },
+    {
+      "id": "prompt",
+      "lane": "motor",
+      "col": 3,
+      "type": "lib",
+      "label": "montarPromptDoResumo",
+      "sublabel": "lib/calls/resumo-da-ligacao.ts · transcrição entre marcadores, como dado"
+    },
+    {
+      "id": "seam",
+      "lane": "ia",
+      "col": 3,
+      "type": "service",
+      "label": "runModelCall · resumo_de_ligacao",
+      "sublabel": "lib/ai/pontos/registro.ts · resolvedor e teto de gasto da organização"
+    },
+    {
+      "id": "llmcalls",
+      "lane": "dados",
+      "col": 3,
+      "type": "table",
+      "label": "llm_calls",
+      "sublabel": "custo e callId da chamada"
+    },
+    {
+      "id": "schema",
+      "lane": "motor",
+      "col": 4,
+      "type": "lib",
+      "label": "ResumoDaLigacaoPayloadSchema",
+      "sublabel": "lib/calls/resumo-da-ligacao.schema.ts · versão 1, um contrato só"
+    },
+    {
+      "id": "emissor",
+      "lane": "motor",
+      "col": 5,
+      "type": "lib",
+      "label": "emitAgentActivityForContact",
+      "sublabel": "lib/leads/agent-activity.ts · negócio ativo do contato"
+    },
+    {
+      "id": "atividades",
+      "lane": "dados",
+      "col": 5,
+      "type": "table",
+      "label": "crm_lead_activities · call_summarized",
+      "sublabel": "actor_kind ai · evidence.llm_call_ids · reason fixo, resumo no payload"
+    },
+    {
+      "id": "naoroteado",
+      "lane": "dados",
+      "col": 6,
+      "type": "table",
+      "label": "event_log · agent.activity_unrouted",
+      "sublabel": "contato sem negócio ativo ou com mais de um"
+    },
+    {
+      "id": "timeline",
+      "lane": "ui",
+      "col": 5,
+      "type": "frontend",
+      "label": "LeadTimeline · ResumoDaLigacaoNaLinha",
+      "sublabel": "components/kanban · fechado até a pessoa abrir; payload fora do contrato mostra só o rótulo"
+    },
+    {
+      "id": "outrastelas",
+      "lane": "ui",
+      "col": 6,
+      "type": "frontend",
+      "label": "TimelineView · CRMSidePanel",
+      "sublabel": "timeline do contato e painel do inbox, mesmo bloco"
+    },
+    {
+      "id": "cascata",
+      "lane": "dados",
+      "col": 7,
+      "type": "table",
+      "label": "fn_lgpd_cascade_redact_contact (0443)",
+      "sublabel": "transcript = null, media_derived_text = null, payload da atividade = {}"
+    },
+    {
+      "id": "exportacao",
+      "lane": "motor",
+      "col": 7,
+      "type": "lib",
+      "label": "export-collector",
+      "sublabel": "lib/lgpd/export-collector.ts · inclui a transcrição no pedido de acesso"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "agentevoz", "to": "fechamento", "label": "ao encerrar a ligação" },
+    {
+      "id": "e2",
+      "from": "fechamento",
+      "to": "ligacoes",
+      "label": "grava a transcrição (id + organização)"
+    },
+    { "id": "e3", "from": "fechamento", "to": "pedido", "label": "emit_event, só se houve fala" },
+    {
+      "id": "e4",
+      "from": "pedido",
+      "to": "handler",
+      "label": "o dreno entrega; retry e dead-letter"
+    },
+    {
+      "id": "e5",
+      "from": "handler",
+      "to": "ligacoes",
+      "label": "lê por id e pela organização do evento"
+    },
+    { "id": "e6", "from": "handler", "to": "prompt", "label": "turnos com fala" },
+    { "id": "e7", "from": "prompt", "to": "seam", "label": "instrução + transcrição como dado" },
+    { "id": "e8", "from": "seam", "to": "llmcalls", "label": "registra a chamada, devolve callId" },
+    {
+      "id": "e9",
+      "from": "handler",
+      "to": "schema",
+      "label": "valida a saída; inválida falha sem gravar"
+    },
+    { "id": "e10", "from": "handler", "to": "emissor", "label": "payload + evidence llm_call_ids" },
+    { "id": "e11", "from": "emissor", "to": "atividades", "label": "uma linha por ligação" },
+    { "id": "e12", "from": "emissor", "to": "naoroteado", "label": "sem negócio único" },
+    {
+      "id": "e13",
+      "from": "atividades",
+      "to": "timeline",
+      "label": "payload pela rota da timeline"
+    },
+    {
+      "id": "e14",
+      "from": "schema",
+      "to": "timeline",
+      "label": "a tela relê o payload pelo mesmo schema"
+    },
+    { "id": "e15", "from": "atividades", "to": "outrastelas", "label": "mesma linha, mesmo bloco" },
+    { "id": "e16", "from": "cascata", "to": "ligacoes", "label": "apaga a transcrição" },
+    { "id": "e17", "from": "cascata", "to": "atividades", "label": "esvazia o resumo" },
+    { "id": "e18", "from": "exportacao", "to": "ligacoes", "label": "lê a transcrição do titular" }
+  ]
+}

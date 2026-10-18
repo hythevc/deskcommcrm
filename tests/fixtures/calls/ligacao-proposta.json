@@ -1,0 +1,82 @@
+[
+  {
+    "speaker": "agent",
+    "text": "Olá, aqui é a assistente virtual da loja. Recebemos o seu pedido de proposta para o plano de atendimento. Posso confirmar alguns detalhes?",
+    "ts": "2026-10-01T14:00:05.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Pode sim. Eu vi o site e queria entender o plano para uma equipe de oito pessoas.",
+    "ts": "2026-10-01T14:00:14.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Perfeito. O plano para equipes de até dez pessoas inclui a caixa de entrada compartilhada e os relatórios semanais. Hoje vocês usam alguma ferramenta?",
+    "ts": "2026-10-01T14:00:26.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Usamos planilha e o WhatsApp de cada vendedor. Está difícil saber quem respondeu quem.",
+    "ts": "2026-10-01T14:00:38.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Entendi. Com o plano, todas as conversas ficam num lugar só, com o responsável por cada cliente. Qual é o prazo que vocês têm em mente para começar?",
+    "ts": "2026-10-01T14:00:51.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Queria começar no início do mês que vem, antes da campanha de fim de ano.",
+    "ts": "2026-10-01T14:01:02.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Dá para fazer. A implantação leva cerca de uma semana. Sobre o investimento, vocês já têm um orçamento definido?",
+    "ts": "2026-10-01T14:01:13.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Temos um teto mensal. O valor da proposta que recebi está um pouco acima do que a diretoria aprovou.",
+    "ts": "2026-10-01T14:01:27.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Entendo. Existe a opção de pagamento anual, que reduz o valor mensal. Quer que eu inclua essa opção na proposta revisada?",
+    "ts": "2026-10-01T14:01:40.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Quero sim. Se ficar dentro do teto, eu levo para a diretoria na reunião de quinta-feira.",
+    "ts": "2026-10-01T14:01:52.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Combinado. Ficou mais alguma dúvida sobre o funcionamento?",
+    "ts": "2026-10-01T14:02:00.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Preciso saber se dá para importar os contatos da planilha.",
+    "ts": "2026-10-01T14:02:09.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Dá sim, a importação aceita planilha em CSV. Posso mandar o passo a passo junto com a proposta.",
+    "ts": "2026-10-01T14:02:20.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Ótimo. Me manda até amanhã que eu já separo a planilha.",
+    "ts": "2026-10-01T14:02:29.000Z"
+  },
+  {
+    "speaker": "agent",
+    "text": "Vou enviar a proposta revisada com o plano anual e o guia de importação até amanhã. Obrigada pelo seu tempo.",
+    "ts": "2026-10-01T14:02:40.000Z"
+  },
+  {
+    "speaker": "customer",
+    "text": "Eu que agradeço. Até mais.",
+    "ts": "2026-10-01T14:02:46.000Z"
+  }
+]

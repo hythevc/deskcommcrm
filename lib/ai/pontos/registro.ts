@@ -426,6 +426,18 @@ export const PONTOS_DE_IA: readonly PontoDeIa[] = [
     registraEm: "llm_calls",
   },
   {
+    id: "resumo_de_ligacao",
+    rotulo: "Resumir a ligação",
+    oQueFaz:
+      "Lê a transcrição de uma ligação encerrada e escreve um resumo curto na linha do tempo do negócio, com os pontos, os compromissos do cliente e uma sugestão de próximo passo.",
+    papel: "lembrar",
+    exige: {},
+    emissor: "lib/calls/resumo-da-ligacao.handler.ts",
+    sintomaDeFalha:
+      "A ligação termina e nenhum resumo aparece no negócio; quem pega o atendimento precisa ler a transcrição inteira.",
+    registraEm: "llm_calls",
+  },
+  {
     id: "embedding_indexar",
     rotulo: "Indexar o seu material",
     oQueFaz:

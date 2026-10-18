@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useTimeline } from "@/hooks/contacts/useTimeline";
 import type { TimelineItemView as TimelineItem } from "@/lib/types/contacts";
 import { activityLabel, actorName, actorShape } from "@/lib/leads/activity-vocabulary";
+import { ResumoDaLigacaoNaLinha } from "@/components/kanban/ResumoDaLigacaoNaLinha";
 
 interface Props {
   contactId: string;
@@ -167,6 +168,7 @@ export function TimelineView({ contactId, types }: Props) {
                           {corpo}
                         </p>
                       )}
+                      <ResumoDaLigacaoNaLinha tipo={it.type} payload={it.payload} />
                     </div>
                   </li>
                 );

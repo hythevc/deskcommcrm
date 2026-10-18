@@ -13,6 +13,7 @@ import {
 } from "@/lib/leads/activity-vocabulary";
 import { agrupaTimeline, ehBlocoColapsavel, ehBlocoDeDia } from "@/lib/leads/timeline-grouping";
 import type { TimelineItemView } from "@/lib/types/contacts";
+import { ResumoDaLigacaoNaLinha } from "@/components/kanban/ResumoDaLigacaoNaLinha";
 
 interface Props {
   itens: TimelineItemView[];
@@ -51,7 +52,17 @@ function Marcador({ item }: { item: TimelineItemView }) {
   );
 }
 
-function Linha({ item, aoVivo }: { item: TimelineItemView; aoVivo?: boolean }) {
+function Linha({
+  item,
+  aoVivo,
+  resumoAberto,
+  aoAlternarResumo,
+}: {
+  item: TimelineItemView;
+  aoVivo?: boolean;
+  resumoAberto: boolean;
+  aoAlternarResumo: () => void;
+}) {
   const tagDoIdioma = useTagDeIdioma();
   const t = useT();
   const nome = actorName(
@@ -77,6 +88,12 @@ function Linha({ item, aoVivo }: { item: TimelineItemView; aoVivo?: boolean }) {
           )}
         </p>
         {item.reason && <p className="mt-0.5 text-xs text-text-muted">{t(item.reason)}</p>}
+        <ResumoDaLigacaoNaLinha
+          tipo={item.type}
+          payload={item.payload}
+          aberto={resumoAberto}
+          aoAlternar={aoAlternarResumo}
+        />
         <p className="mt-0.5 text-[11px] text-text-muted">
           {nome} · {quando(item.performed_at, tagDoIdioma)}
         </p>
@@ -95,8 +112,26 @@ function Linha({ item, aoVivo }: { item: TimelineItemView; aoVivo?: boolean }) {
  */
 export function LeadTimeline({ itens, chegouAoVivo, isLoading, isError }: Props) {
   const t = useT();
-  const [abertos, setAbertos] = useState<Set<number>>(new Set());
+  // Um estado só para tudo que abre na lista: blocos pela posição, resumo de
+  // ligação pelo id da linha (uuid, não colide com `bloco:N`).
+  const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const blocos = agrupaTimeline(itens, chegouAoVivo);
+  const alternar = (chave: string) =>
+    setAbertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(chave)) next.delete(chave);
+      else next.add(chave);
+      return next;
+    });
+  const linha = (item: TimelineItemView, aoVivo?: boolean) => (
+    <Linha
+      key={item.id}
+      item={item}
+      aoVivo={aoVivo}
+      resumoAberto={abertos.has(item.id)}
+      aoAlternarResumo={() => alternar(item.id)}
+    />
+  );
 
   if (isLoading) {
     return <p className="py-4 text-xs text-text-muted">{t("Carregando a linha do tempo…")}</p>;
@@ -123,25 +158,18 @@ export function LeadTimeline({ itens, chegouAoVivo, isLoading, isError }: Props)
     <ul className="border-l border-border pl-3">
       {blocos.map((b, i) => {
         if (b.tipo === "item") {
-          return <Linha key={b.item.id} item={b.item} aoVivo={b.aoVivo} />;
+          return linha(b.item, b.aoVivo);
         }
         if (b.tipo === "dia") {
           // Bloco de dia com UM item só não vira bloco: "terça · 1 ação" custa
           // um clique e não informa nada que a própria linha não informe.
-          if (!ehBlocoDeDia(b)) return <Linha key={b.itens[0]!.id} item={b.itens[0]!} />;
-          const aberto = abertos.has(i);
+          if (!ehBlocoDeDia(b)) return linha(b.itens[0]!);
+          const aberto = abertos.has(`bloco:${i}`);
           return (
             <li key={b.dia} className="py-1.5">
               <button
                 type="button"
-                onClick={() =>
-                  setAbertos((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(i)) next.delete(i);
-                    else next.add(i);
-                    return next;
-                  })
-                }
+                onClick={() => alternar(`bloco:${i}`)}
                 aria-expanded={aberto}
                 className="flex w-full items-center gap-2 text-left text-xs text-text-muted hover:text-text"
               >
@@ -157,18 +185,16 @@ export function LeadTimeline({ itens, chegouAoVivo, isLoading, isError }: Props)
               </button>
               {aberto && (
                 <ul className="ml-2 border-l border-border pl-3">
-                  {b.itens.map((it) => (
-                    <Linha key={it.id} item={it} />
-                  ))}
+                  {b.itens.map((it) => linha(it))}
                 </ul>
               )}
             </li>
           );
         }
         if (!ehBlocoColapsavel(b)) {
-          return <Linha key={b.itens[0]!.id} item={b.itens[0]!} />;
+          return linha(b.itens[0]!);
         }
-        const aberto = abertos.has(i);
+        const aberto = abertos.has(`bloco:${i}`);
         const primeiro = b.itens[0]!;
         const nome = actorName(
           primeiro.actor_kind ?? null,
@@ -182,14 +208,7 @@ export function LeadTimeline({ itens, chegouAoVivo, isLoading, isError }: Props)
           <li key={`g${i}`} className="py-1.5">
             <button
               type="button"
-              onClick={() =>
-                setAbertos((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(i)) next.delete(i);
-                  else next.add(i);
-                  return next;
-                })
-              }
+              onClick={() => alternar(`bloco:${i}`)}
               aria-expanded={aberto}
               className="flex w-full items-center gap-2 text-left text-xs text-text-muted hover:text-text"
             >
@@ -202,11 +221,7 @@ export function LeadTimeline({ itens, chegouAoVivo, isLoading, isError }: Props)
               </span>
             </button>
             {aberto && (
-              <ul className="ml-2 border-l border-border pl-3">
-                {b.itens.map((it) => (
-                  <Linha key={it.id} item={it} />
-                ))}
-              </ul>
+              <ul className="ml-2 border-l border-border pl-3">{b.itens.map((it) => linha(it))}</ul>
             )}
           </li>
         );

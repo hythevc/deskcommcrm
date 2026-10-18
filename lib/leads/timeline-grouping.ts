@@ -44,6 +44,9 @@ const NUNCA_COLAPSA = new Set([
   "followup_resumed",
   "followup_snoozed",
   "followup_step_skipped",
+  // O resumo da ligação nasce no mesmo minuto em que o agente encerra a
+  // chamada; dentro do bloco dele, o único registro do que foi dito sumiria.
+  "call_summarized",
 ]);
 
 /** Janela do agrupamento. O contrato fala em "mesmo minuto". */

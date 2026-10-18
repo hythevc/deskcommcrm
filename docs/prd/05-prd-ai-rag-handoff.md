@@ -289,7 +289,7 @@ A camada é **MVP-completa** quando:
 - MCP tools-side (bot mutar CRM via tools) — Fase 2
 - A/B testing de prompts — Fase 2
 - Multi-language (tenant em ES/EN) — pós-MVP
-- Voice/áudio (transcrição de áudio) — pós-MVP
+- Voice/áudio (transcrição de áudio) — pós-MVP. Estado atual: a nota de voz já é transcrita (`messages.media_derived_text`) e a ligação do agente de voz SIP chega ao negócio como resumo da IA (`lib/calls/resumo-da-ligacao.handler.ts`, migration 0443); este sub-PRD continua sem cobrir voz.
 - Geração proativa (recovery de carrinho por IA) — pós-MVP
 - NPS automatizado com cálculo agregado — pós-MVP
 - Roteamento avançado de agents (1 default no MVP) — pós-MVP

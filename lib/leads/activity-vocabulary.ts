@@ -130,6 +130,13 @@ export type ActivityType =
    */
   | "voice_call_unanswered"
   /**
+   * O resumo que a IA escreveu de uma ligação transcrita
+   * (`lib/calls/resumo-da-ligacao.handler.ts`). Tipo próprio porque o conteúdo
+   * é leitura da IA, com lastro em `llm_calls`, e a tela precisa apresentá-lo
+   * como tal — não como o registro da ligação em si (`voice_call`).
+   */
+  | "call_summarized"
+  /**
    * A TAREFA COMBINADA, na linha do tempo do negócio (migration 0210).
    *
    * "Ligar de volta na terça" só existe por causa de um negócio. Sem estas duas
@@ -259,6 +266,7 @@ export const ACTIVITY_LABELS: Record<ActivityType, string> = {
   voice_call: "Chamada de voz",
   voice_call_missed: "Chamada de voz perdida",
   voice_call_unanswered: "Chamada de voz sem resposta",
+  call_summarized: "Resumo da ligação",
   task_created: "Tarefa combinada",
   task_completed: "Tarefa concluída",
   // Rótulo com OBJETO e sem jargão de banco: "Mesclado" sozinho é palavra de
