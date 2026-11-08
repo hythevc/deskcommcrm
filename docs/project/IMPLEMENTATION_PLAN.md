@@ -33,7 +33,8 @@ referencia_arquitetural: ARCHITECTURE.md, docs/project/TRD.md
 - **Requirement IDs** are the PRD's: `CALL-01`…`CALL-12`, `DEAL-01`…`DEAL-10`, `CRED-01`…`CRED-14`
   (`PRD.md` §4.4). §7 maps every ID to tasks.
 - **Lane decisions D1–D3** (call summary, AI deal updates, credits ledger), the migration numbers
-  `0443`/`0444`/`0445` and the four branch names are binding. Where a sibling doc proposes a default
+  `0443`/`0444`/`0445` and the four branch names are binding, except the D3 credits-model points held for Jaime (PRD §10
+  Q1–Q5, Q16), which stay pending. Where a sibling doc proposes a default
   for an open question, this plan names the question and gates the task on it rather than choosing.
 - **Status marks** (same glyphs as the spec 16/17 build-order tables): ⬜ not started · 🟨 in
   progress (branch has commits) · 🟦 in draft PR · ✅ proven (verifier verdict pinned to a commit) ·
@@ -53,46 +54,46 @@ referencia_arquitetural: ARCHITECTURE.md, docs/project/TRD.md
 One draft PR per slice, smallest first. Status is the truth for this lane; update it in the same
 PR that moves a task (§11).
 
-| #   | Task                                                                      | Slice | Depends on                            | Branch                            | Gate  | Status |
-| --- | ------------------------------------------------------------------------- | ----- | ------------------------------------- | --------------------------------- | ----- | ------ |
-| T0  | Publish the six `docs/project/` docs as a draft PR                        | docs  | —                                     | `claude/deskcomm-project-docs`    | quick | ⬜     |
-| T1  | Repro: transcript survives redaction and is missing from the export       | 1     | —                                     | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T2  | Migration 0443: cascade nulls the transcript; one summary per call        | 1     | T1                                    | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T3  | Access export carries the transcript and the summary                      | 1     | T1                                    | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T4  | Activity type `call_summarized`, never collapsed                          | 1     | —                                     | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T5  | Pure summariser module and fixtures                                       | 1     | —                                     | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T6  | Summary handler, AI purpose, handler registration                         | 1     | T2, T4, T5                            | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T7  | Voice agent emits `voice_call.summary_requested`                          | 1     | T6                                    | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T8  | DB invariant: fixture transcript to one AI row on the deal                | 1     | T2, T6, T7                            | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T9  | Timeline renders the summary (surface A)                                  | 1     | T4, T5                                | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T10 | Slice 1 close-out: map, fragment, state claims, destination               | 1     | T8, T9                                | `claude/deskcomm-call-summary`    | quick | ⬜     |
-| T11 | Slice 1 screen proof and draft PR                                         | 1     | T3, T10                               | `claude/deskcomm-call-summary`    | full  | ⬜     |
-| T12 | Repro: AI stage move is `system`, keys `de`/`para`, harness ignores scope | 2     | —                                     | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T13 | Recorded-conversation fixture                                             | 2     | —                                     | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T14 | Attributed, scoped stage mirror                                           | 2     | T12, decision TRD §7 Q1               | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T15 | Correction check on board and bulk moves                                  | 2     | T14, decision APP_FLOW §8 A6          | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T16 | Migration 0444: `crm_leads.next_step`; cascade nulls it                   | 2     | T2 merged to `main`                   | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T17 | Next-step mirror and `next_step_set`                                      | 2     | T14, T16                              | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T18 | Human edit of the next step; export carries it                            | 2     | T16                                   | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T19 | Card and dossier show the next step (surfaces B1, B2)                     | 2     | T17, T18                              | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
-| T20 | DB invariant: recorded conversation replayed through the turn             | 2     | T13, T14, T17                         | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T21 | Paired proof by screen (prova em par)                                     | 2     | T19, T20, decision §12 P3             | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T22 | Slice 2 close-out and draft PR                                            | 2     | T20, T21                              | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
-| T23 | Credit conversion rule (pure TS)                                          | 3     | —                                     | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T24 | Migration 0445: ledger, policies, immutability, metering, balance         | 3     | T23, decision PRD §10 Q2              | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T25 | Register the ledger in the isolation and vocabulary invariants            | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T26 | DB invariant: debits, idempotency, null cost, balance                     | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T27 | DB invariant: append-only under the Supabase default ACL                  | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
-| T28 | Balance read route with the unpriced count                                | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T29 | Grant and adjustment route                                                | 3     | T24, decisions TRD §7 Q2, PRD §10 Q16 | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T30 | Credits card and grant dialog (surfaces C, D)                             | 3     | T28, T29, decision PRD §10 Q4         | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T31 | State claims (DoD 16) and the budget architecture map                     | 3     | T24                                   | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
-| T32 | Slice 3 screen proof, fragment and draft PR                               | 3     | T25, T26, T27, T30, T31               | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| #   | Task                                                                      | Slice | Depends on                                              | Branch                            | Gate  | Status |
+| --- | ------------------------------------------------------------------------- | ----- | ------------------------------------------------------- | --------------------------------- | ----- | ------ |
+| T0  | Publish the six `docs/project/` docs as a draft PR                        | docs  | —                                                       | `claude/deskcomm-project-docs`    | quick | ⬜     |
+| T1  | Repro: transcript survives redaction and is missing from the export       | 1     | —                                                       | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T2  | Migration 0443: cascade nulls the transcript; one summary per call        | 1     | T1                                                      | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T3  | Access export carries the transcript and the summary                      | 1     | T1                                                      | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T4  | Activity type `call_summarized`, never collapsed                          | 1     | —                                                       | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T5  | Pure summariser module and fixtures                                       | 1     | —                                                       | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T6  | Summary handler, AI purpose, handler registration                         | 1     | T2, T4, T5                                              | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T7  | Voice agent emits `voice_call.summary_requested`                          | 1     | T6                                                      | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T8  | DB invariant: fixture transcript to one AI row on the deal                | 1     | T2, T6, T7                                              | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T9  | Timeline renders the summary (surface A)                                  | 1     | T4, T5, decision PRD §10 Q17 (held for Jaime)           | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T10 | Slice 1 close-out: map, fragment, state claims, destination               | 1     | T8, T9                                                  | `claude/deskcomm-call-summary`    | quick | ⬜     |
+| T11 | Slice 1 screen proof and draft PR                                         | 1     | T3, T10                                                 | `claude/deskcomm-call-summary`    | full  | ⬜     |
+| T12 | Repro: AI stage move is `system`, keys `de`/`para`, harness ignores scope | 2     | —                                                       | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T13 | Recorded-conversation fixture                                             | 2     | —                                                       | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T14 | Attributed, scoped stage mirror                                           | 2     | T12, decision TRD §7 Q1                                 | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T15 | Correction check on board and bulk moves                                  | 2     | T14, decision APP_FLOW §8 A6                            | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T16 | Migration 0444: `crm_leads.next_step`; cascade nulls it                   | 2     | T2 merged to `main`                                     | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T17 | Next-step mirror and `next_step_set`                                      | 2     | T14, T16                                                | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T18 | Human edit of the next step; export carries it                            | 2     | T16                                                     | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T19 | Card and dossier show the next step (surfaces B1, B2)                     | 2     | T17, T18, decision PRD §10 Q17 (held for Jaime)         | `claude/deskcomm-ai-deal-updates` | quick | ⬜     |
+| T20 | DB invariant: recorded conversation replayed through the turn             | 2     | T13, T14, T17                                           | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T21 | Paired proof by screen (prova em par)                                     | 2     | T19, T20, decision §12 P3                               | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T22 | Slice 2 close-out and draft PR                                            | 2     | T20, T21                                                | `claude/deskcomm-ai-deal-updates` | full  | ⬜     |
+| T23 | Credit conversion rule (pure TS)                                          | 3     | decision PRD §10 Q1 (held for Jaime)                    | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T24 | Migration 0445: ledger, policies, immutability, metering, balance         | 3     | T23, decision PRD §10 Q2                                | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T25 | Register the ledger in the isolation and vocabulary invariants            | 3     | T24                                                     | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T26 | DB invariant: debits, idempotency, null cost, balance                     | 3     | T24                                                     | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T27 | DB invariant: append-only under the Supabase default ACL                  | 3     | T24                                                     | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
+| T28 | Balance read route with the unpriced count                                | 3     | T24                                                     | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T29 | Grant and adjustment route                                                | 3     | T24, decisions TRD §7 Q2, PRD §10 Q16                   | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T30 | Credits card and grant dialog (surfaces C, D)                             | 3     | T28, T29, decisions PRD §10 Q4 and Q17 (held for Jaime) | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T31 | State claims (DoD 16) and the budget architecture map                     | 3     | T24                                                     | `claude/deskcomm-credit-ledger`   | quick | ⬜     |
+| T32 | Slice 3 screen proof, fragment and draft PR                               | 3     | T25, T26, T27, T30, T31                                 | `claude/deskcomm-credit-ledger`   | full  | ⬜     |
 
 A task whose "Depends on" names a decision can be drafted, but its behaviour must not ship until
 the question is answered (PRD §10: "none means the slice must not ship that behaviour until
 answered"). It turns ⛔ once everything else it needs is done and only the decision is missing.
-Decisions marked "held for Jaime" (PRD §10 Q2, Q4, Q16) are held for the owner via main; the plan
+Decisions marked "held for Jaime" (PRD §10 Q1, Q2, Q3, Q4, Q5, Q16, Q17) are held for the owner via main; the plan
 names them and never picks an answer.
 
 Open sibling question for T6 and T8: `APP_FLOW.md` §8 A1 (a paid summary for a contact with no
@@ -517,7 +518,8 @@ visually hidden polite live region in `LeadTimeline` that announces a live `call
 at `:79`; CONFIRMED), `lib/ui/icons.ts`, `lib/i18n/dicionario.ts`,
 `tests/unit/lead-timeline-resumo.test.tsx` (new), a unit test for
 `components/contacts/TimelineView.tsx`.
-**Depends on:** T4, T5
+**Depends on:** T4, T5; **decision** PRD §10 Q17 (held for Jaime)
+
 **Reuses:** the existing `aria-expanded` toggle pattern (no shadcn Collapsible exists in
 `components/ui`, per TRD §4.2); Phosphor icons only through `lib/ui/icons.ts`; copy and states
 from `DESIGN_BRIEF.md` §4.
@@ -827,7 +829,8 @@ assistant, editable in the dossier, with precedence and copy from `DESIGN_BRIEF.
 DESIGN_BRIEF §12 Q1 on the proposal shown for a step already applied).
 **Where:** `components/kanban/KanbanCard.tsx` (`:250-287`), `components/kanban/LeadDossier.tsx`,
 `lib/kanban/card-state.ts`, the board route read, `lib/i18n/dicionario.ts`, jsdom tests.
-**Depends on:** T17, T18
+**Depends on:** T17, T18; **decision** PRD §10 Q17 (held for Jaime)
+
 **Reuses:** `DESIGN_BRIEF.md` §5 anatomy and copy; Phosphor via `lib/ui/icons.ts`.
 **Requirement:** DEAL-05, DEAL-07
 
@@ -935,13 +938,14 @@ Branch `claude/deskcomm-credit-ledger`, migration `0445`, requirements `CRED-01`
 **Restated problem.** Spend exists only as US cents in `llm_calls.cost_cents`, summed by the single
 function `fn_gasto_de_ia_do_mes` (`supabase/baseline.sql:13125`, CONFIRMED). No credit, ledger or
 usage table exists. The slice meters every priced, successful model call as a credit debit in an
-append-only ledger. It does not price, bill or block. The unit (1 credit = 1 US cent of recorded cost,
-rounded up per call) is a provisional lane rule pending owner confirmation (`PRD.md` §10 Q1).
+append-only ledger. It does not price, bill or block. The unit is pending PRD §10
+Q1 (held for Jaime); D3 proposes 1 credit = 1 US cent of recorded cost, rounded up per call.
 
 ### Execution plan
 
 ```text
-Phase 3A (rule):        T23
+Phase 3A (rule):        T23 (gated by PRD Q1)
+
 Phase 3B (schema):      T23 → T24
 Phase 3C (proof in DB): T24 → T25 [P], T26 [P], T27 [P]
 Phase 3D (surface):     T24 → T28, T24 → T29 → T30 (gated by PRD Q4)
@@ -950,11 +954,12 @@ Phase 3E (close):       T24 → T31 [P]; all → T32
 
 ### T23: Credit conversion rule (pure TS)
 
-**What:** The named constant and `creditosDaChamada(costCents)`: ceiling per call, null for null
+**What:** The named constant and `creditosDaChamada(costCents)`: conversion per the answer to PRD
+§10 Q1 (pending, held for Jaime; D3 proposes a ceiling per call), null for null
 cost, no debit for negative cost; zero per the answer to PRD §10 Q2 (pending, held for Jaime; no
 zero branch until answered).
 **Where:** `lib/creditos/conversao.ts`, `lib/creditos/conversao.test.ts` (both new, TRD §6.2, §6.16).
-**Depends on:** None.
+**Depends on:** **decision** PRD §10 Q1 (held for Jaime).
 **Reuses:** test style of `lib/agent-engine/edge/llm/pricing.test.ts` (CONFIRMED to exist).
 **Requirement:** CRED-08, CRED-04
 
@@ -1138,20 +1143,21 @@ not shown until PRD §10 Q1 is confirmed (DESIGN_BRIEF §12 Q5).
 **Where:** on the `/app/ai/usage` option, `app/app/ai/usage/page.tsx` (`:58-69`); new components,
 `lib/i18n/dicionario.ts`, jsdom tests.
 **Depends on:** T28, T29; **decision** PRD §10 Q4 (pending, held for Jaime; no doc assumes a
-location).
+location); **decision** PRD §10 Q17 (held for Jaime).
 **Reuses:** `DESIGN_BRIEF.md` §6–7; `lib/money.ts` only for the USD source cost, never for credits.
 **Requirement:** CRED-12, CRED-13 (UI side), sistema-vivo invariant 6
 
 **Done when:**
 
 - [ ] Error state is not zero; no currency symbol on credits; double submit sends one key
-- [ ] No new nav entry (the screen exists, `lib/navigation/catalogo.ts:569`, CONFIRMED)
+- [ ] No new nav entry if Q4 picks an existing screen (`/app/ai/usage` is
+      `lib/navigation/catalogo.ts:569`); a new route needs one (DoD 14)
 - [ ] Gate: jsdom tests and `pnpm vitest run tests/unit/i18n-espanhol-cobre-a-tela.test.ts`
 
 **Tests:** unit (jsdom)
 **Gate:** quick
 
-**Commit:** `feat(uso): saldo de créditos e concessão na tela de uso de IA`
+**Commit:** `feat(creditos): saldo de créditos e concessão na tela escolhida`
 
 ---
 
@@ -1159,7 +1165,7 @@ location).
 
 **What:** Add the DoD 16 note D3 requires to `docs/doctrine/operacao-de-agentes.md` (a ledger now
 meters; nothing bills; the measuring grep at `:103-107` still returns 0 because `credit_ledger` does
-not match it); update the `/app/ai/usage` catalog description if T30 lands (APP_FLOW §6); extend
+not match it); update the catalog description of the screen PRD §10 Q4 picks, if any (APP_FLOW §6); extend
 `docs/architecture/teto-de-orcamento.architecture.json`.
 **Where:** those three files.
 **Depends on:** T24
@@ -1182,10 +1188,10 @@ not match it); update the `/app/ai/usage` catalog description if T30 lands (APP_
 
 ### T32: Slice 3 screen proof, fragment and draft PR
 
-**What:** Playwright: insert priced, unpriced and failed `llm_calls` rows in a fresh install, open
-`/app/ai/usage` as manager and as admin, grant twice with a double click. Evidence, fragment,
+**What:** Playwright: insert priced, unpriced and failed `llm_calls` rows in a fresh install, open the surface PRD §10 Q4 picks (pending, held for
+Jaime) as manager and as admin, grant twice with a double click. Evidence, fragment,
 Living System Checklist, destination, draft PR.
-**Where:** `tests/e2e/creditos-no-uso-de-ia.spec.ts` (new, listed in `e2e.yml`),
+**Where:** `tests/e2e/creditos-no-livro.spec.ts` (new, listed in `e2e.yml`),
 `evidence/creditos-no-livro/` plus `evidence/creditos-no-livro.md`, `.changes/`,
 `docs/testing/user-journey-map.md`.
 **Depends on:** T25, T26, T27, T30, T31
@@ -1219,7 +1225,7 @@ itself is the thing measured (slice 2's agent side).
 | ----- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | 1     | `tests/fixtures/calls/` (fictional transcript; scripted valid and invalid output) | `tests/unit/resumo-da-chamada.test.ts`, `tests/unit/timeline-grouping.test.ts` (extended), `tests/unit/lead-timeline-resumo.test.tsx`, export column test, `tests/invariants/resumo-da-chamada-na-timeline.test.ts`, `tests/e2e/resumo-da-chamada-no-negocio.spec.ts` | `evidence/resumo-da-chamada/` + `evidence/resumo-da-chamada.md`         | Not required: the summariser is not an agent turn (PRD §6.2). Generation in DB, rendering on screen |
 | 2     | `tests/fixtures/conversas/` (fictional conversation, scripted tool calls)         | `tests/invariants/ia-move-etapa-e-proximo-passo.test.ts`, `tests/unit/agent-stage-sync.test.ts` (extended), next-step mirror unit test, route tests, card and dossier jsdom tests, `tests/e2e/ia-atualiza-o-negocio.spec.ts`                                          | `evidence/ia-atualiza-o-negocio/` + `evidence/ia-atualiza-o-negocio.md` | Required (DEAL-10): T20 is the direct side, T21 the agent side, same raw text                       |
-| 3     | Inline seeds in the invariants (no content, no contact)                           | `lib/creditos/conversao.test.ts`, constant-identity test, `tests/invariants/creditos-no-livro.test.ts`, `tests/invariants/creditos-sob-o-default-acl-do-supabase.test.ts`, registry edits (T25), route tests, jsdom tests, `tests/e2e/creditos-no-uso-de-ia.spec.ts`  | `evidence/creditos-no-livro/` + `evidence/creditos-no-livro.md`         | Not applicable: no agent in the path                                                                |
+| 3     | Inline seeds in the invariants (no content, no contact)                           | `lib/creditos/conversao.test.ts`, constant-identity test, `tests/invariants/creditos-no-livro.test.ts`, `tests/invariants/creditos-sob-o-default-acl-do-supabase.test.ts`, registry edits (T25), route tests, jsdom tests, `tests/e2e/creditos-no-livro.spec.ts`      | `evidence/creditos-no-livro/` + `evidence/creditos-no-livro.md`         | Not applicable: no agent in the path                                                                |
 
 Rules for every evidence index: it names the commit the PNGs were taken against, says what each
 image proves and what stayed red, and cites every image (`tests/unit/evidencia-citada.test.ts`).
@@ -1332,26 +1338,26 @@ Every slice PR:
 
 Rows are `CLAUDE.md` DoD items 1–18 (`CLAUDE.md:710-763`, CONFIRMED). "N/A" carries its reason.
 
-| DoD                                         | Slice 1                                                                                                               | Slice 2                                                                   | Slice 3                                                               |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| 1 `pnpm typecheck`                          | T6, T7, T11                                                                                                           | T14, T17, T22                                                             | T24, T28, T29, T32                                                    |
-| 2 `pnpm lint`                               | T7, T11                                                                                                               | T22                                                                       | T29, T32                                                              |
-| 3 Tests exist and pass                      | §6 row 1                                                                                                              | §6 row 2                                                                  | §6 row 3                                                              |
-| 4 RLS tested                                | No new table; cross-org case in T8                                                                                    | No new table; scope and org filter in T14, T20                            | T25 isolation entry, T27                                              |
-| 5 Audit on relevant mutation                | N/A: no user-initiated mutation (TRD §4.8); trail is event, `llm_calls`, activity                                     | Human edit through the audited patch route (T18, INFERRED until its test) | T29 audit codes appended                                              |
-| 6 Rate limit on public route                | N/A: no new route                                                                                                     | N/A: no new public route                                                  | N/A: both routes need a session and a role                            |
-| 7 Zod on external input                     | Model output and payload schema (T5)                                                                                  | Patch body (T18); tool input whitelist unchanged                          | Grant body (T29)                                                      |
-| 8 No `console.log`                          | T7 (voice agent uses `lib/logger.ts` for new lines)                                                                   | grep in T22                                                               | grep in T32                                                           |
-| 9 Env vars in `.env.example` + `lib/env.ts` | N/A: none new (TRD §4.11)                                                                                             | N/A: none new (TRD §5.11)                                                 | N/A: none new (TRD §6.12)                                             |
-| 10 Doc updated if contract changed          | `docs/project/*` status and markers (§11)                                                                             | same                                                                      | same                                                                  |
-| 11 Migration + MANIFEST                     | 0443 (T2)                                                                                                             | 0444 (T16)                                                                | 0445 (T24)                                                            |
-| 12 Proven by screen, fresh env              | T11                                                                                                                   | T21, paired                                                               | T32 (blocked by PRD Q4 if no surface)                                 |
-| 13 Living System Checklist + map            | T10, new voice map                                                                                                    | T22, `crm-vivo` map                                                       | T31, `teto-de-orcamento` map; screen part blocked by PRD Q4           |
-| 14 New screen has a nav entry               | N/A: no new screen (APP_FLOW §6)                                                                                      | N/A: no new screen                                                        | N/A if T30 lands on `/app/ai/usage`; re-check if Q4 picks a new route |
-| 15 Docker, compose, kit reach installs      | No such file edited; the voice-agent and agent-worker images change content, so run `pnpm test:shell` (INFERRED need) | No such file edited                                                       | No such file edited                                                   |
-| 16 State claims                             | Voice agent header (T7), any authority doc saying nothing consumes the transcript (T10)                               | Spec 17 §7 step 5, next-action route header (T22)                         | `operacao-de-agentes.md` note, `/app/ai/usage` description (T31)      |
-| 17 `.changes/` fragment                     | T10                                                                                                                   | T22                                                                       | T32                                                                   |
-| 18 Destination declared                     | PR body; open (PRD §10 Q10)                                                                                           | same                                                                      | same                                                                  |
+| DoD                                         | Slice 1                                                                                                               | Slice 2                                                                   | Slice 3                                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 1 `pnpm typecheck`                          | T6, T7, T11                                                                                                           | T14, T17, T22                                                             | T24, T28, T29, T32                                                                            |
+| 2 `pnpm lint`                               | T7, T11                                                                                                               | T22                                                                       | T29, T32                                                                                      |
+| 3 Tests exist and pass                      | §6 row 1                                                                                                              | §6 row 2                                                                  | §6 row 3                                                                                      |
+| 4 RLS tested                                | No new table; cross-org case in T8                                                                                    | No new table; scope and org filter in T14, T20                            | T25 isolation entry, T27                                                                      |
+| 5 Audit on relevant mutation                | N/A: no user-initiated mutation (TRD §4.8); trail is event, `llm_calls`, activity                                     | Human edit through the audited patch route (T18, INFERRED until its test) | T29 audit codes appended                                                                      |
+| 6 Rate limit on public route                | N/A: no new route                                                                                                     | N/A: no new public route                                                  | N/A: both routes need a session and a role                                                    |
+| 7 Zod on external input                     | Model output and payload schema (T5)                                                                                  | Patch body (T18); tool input whitelist unchanged                          | Grant body (T29)                                                                              |
+| 8 No `console.log`                          | T7 (voice agent uses `lib/logger.ts` for new lines)                                                                   | grep in T22                                                               | grep in T32                                                                                   |
+| 9 Env vars in `.env.example` + `lib/env.ts` | N/A: none new (TRD §4.11)                                                                                             | N/A: none new (TRD §5.11)                                                 | N/A: none new (TRD §6.12)                                                                     |
+| 10 Doc updated if contract changed          | `docs/project/*` status and markers (§11)                                                                             | same                                                                      | same                                                                                          |
+| 11 Migration + MANIFEST                     | 0443 (T2)                                                                                                             | 0444 (T16)                                                                | 0445 (T24)                                                                                    |
+| 12 Proven by screen, fresh env              | T11                                                                                                                   | T21, paired                                                               | T32 (blocked by PRD Q4 if no surface)                                                         |
+| 13 Living System Checklist + map            | T10, new voice map                                                                                                    | T22, `crm-vivo` map                                                       | T31, `teto-de-orcamento` map; screen part blocked by PRD Q4                                   |
+| 14 New screen has a nav entry               | N/A: no new screen (APP_FLOW §6)                                                                                      | N/A: no new screen                                                        | N/A if PRD §10 Q4 (held for Jaime) picks an existing screen; required if it picks a new route |
+| 15 Docker, compose, kit reach installs      | No such file edited; the voice-agent and agent-worker images change content, so run `pnpm test:shell` (INFERRED need) | No such file edited                                                       | No such file edited                                                                           |
+| 16 State claims                             | Voice agent header (T7), any authority doc saying nothing consumes the transcript (T10)                               | Spec 17 §7 step 5, next-action route header (T22)                         | `operacao-de-agentes.md` note; description of the screen Q4 picks, if any (T31)               |
+| 17 `.changes/` fragment                     | T10                                                                                                                   | T22                                                                       | T32                                                                                           |
+| 18 Destination declared                     | PR body; open (PRD §10 Q10)                                                                                           | same                                                                      | same                                                                                          |
 
 ---
 

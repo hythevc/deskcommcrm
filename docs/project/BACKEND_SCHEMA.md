@@ -24,8 +24,8 @@
   `rfind` snippet in `CLAUDE.md:658-662` searches the lowercase, unquoted spelling; it misses the
   dump-style `CREATE OR REPLACE FUNCTION "public"."…"` form that the last cascade definition uses.
 - **No business numbers.** No price, SLA or customer figure appears here (`AGENTS.md:544-551`).
-  The only constant is the credit unit that the lane decisions fix (1 credit = 1 US cent of
-  recorded provider cost), which is a decision to confirm, not a price.
+  The credit unit D3 proposes (1 credit = 1 US cent of recorded provider cost) is pending PRD §10 Q1
+  (held for Jaime); §6.2 sketches it as a labelled proposal.
 - **Synthetic data only.** Fixtures and examples use no real phone number, email or name
   (`tests/unit/sem-identificador-de-producao.test.ts` scans `docs/`).
 
@@ -33,7 +33,8 @@
 
 ## 1. The decisions this file implements
 
-From the lane decisions (binding for all six docs), schema-relevant parts only:
+From the lane decisions (binding for all six docs, except the D3 credits-model points held for
+Jaime (PRD §10 Q1–Q5, Q16), which stay pending), schema-relevant parts only:
 
 - **D1, slice 1, migration 0443.** Restore `transcript = null` in the last
   `fn_lgpd_cascade_redact_contact`; make sure `call_summarized` payloads are redacted with the
@@ -548,8 +549,8 @@ Notes on the shape:
 ```sql
 -- PROPOSED sketch, same block, before the anon sweep (S4).
 
--- The credit unit (D3): 1 credit = 1 US cent of llm_calls.cost_cents, rounded UP per call.
--- A decision to confirm, not a price. Mirrored by CENTAVOS_USD_POR_CREDITO in lib/creditos/conversao.ts;
+-- The credit unit is pending PRD §10 Q1 (held for Jaime). D3 proposes 1 credit = 1 US cent,
+-- rounded UP per call; this body is that proposal, not a default. Mirrored by CENTAVOS_USD_POR_CREDITO in lib/creditos/conversao.ts;
 -- a unit test reads this literal from the labelled block and compares (S8 spirit).
 create or replace function public.fn_creditos_da_chamada(p_cost_cents numeric)
 returns bigint
@@ -626,9 +627,9 @@ Why each choice:
 - **Trigger order.** Two AFTER INSERT row triggers on `llm_calls` fire in name order
   (`trg_llm_calls_budget` before `trg_llm_calls_creditos`); they are independent. INFERRED from
   PostgreSQL's documented ordering.
-- **No backfill.** On `update.sh`, the 0130 backfill at `:11296` runs textually before this block
-  and uses `on conflict do nothing`, so it does not fire the new trigger for skipped rows; rows that
-  existed before 0445 are never debited (`TRD.md` §7 Q4, `PRD.md` §10 Q3). INFERRED from line order
+- **Backfill pending PRD §10 Q3 (held for Jaime).** Without one, the 0130 backfill at `:11296` runs
+  textually before this block with `on conflict do nothing` and does not fire the new trigger for
+  skipped rows, so rows that existed before 0445 are not debited (`TRD.md` §7 Q4, `PRD.md` §10 Q3). INFERRED from line order
   and PostgreSQL semantics.
 - **No second spend measure.** The ledger sums `delta`, not `cost_cents`, and has no monthly
   window, so `tests/unit/orcamento-uma-regua-de-gasto.test.ts` is unaffected; `fn_gasto_de_ia_do_mes`
@@ -731,7 +732,7 @@ Effective privileges after the block (PROPOSED, to be proven):
   (`tests/invariants/audit-log-sob-o-default-acl-do-supabase.test.ts:48-56`). The label must be
   unique in the file.
 - **MANIFEST row.** PROPOSED; the "what and why" names the table, the trigger on `llm_calls`, the
-  unit as a decision to confirm, and that nothing blocks:
+  unit as pending PRD §10 Q1 (held for Jaime), and that slice 3 blocks nothing:
 
   ```text
   | `<timestamp>` | `0445_livro_de_creditos` | **Cada chamada de modelo com custo conhecido debita créditos num livro que só recebe linha.** … |
@@ -810,7 +811,7 @@ No new event type for slices 2 and 3: a fact with no consumer would have to join
 | `tests/invariants/vocabulario-banco-x-typescript.test.ts` `PARES` (existing, edited)                                                                           | —    | —    | yes  | `credit_ledger.kind` paired with the TS symbol.                                                                                                                                                                                                                                                                                                                                                 |
 | `tests/invariants/lgpd-redact-unificado-alcanca-pelo-catalogo.test.ts` (existing)                                                                              | yes  | yes  | —    | `voice_calls` and `crm_leads` stay "redigir + cascata" and the function body still has their commands. `credit_ledger` has no FK to `contacts`, so it needs no entry.                                                                                                                                                                                                                           |
 | `tests/invariants/creditos-sob-o-default-acl-do-supabase.test.ts` (new)                                                                                        | —    | —    | yes  | The audit-log-under-default-ACL pattern: simulate the Supabase table default ACL, apply the labelled 0445 block, then probe `update`, `delete`, `truncate` for `anon`, `authenticated`, `service_role` (permission denied, not zero rows), with a control case without the block; `insert` and `select` still work for `service_role`; the owner's `UPDATE` raises `credit_ledger_append_only`. |
-| `tests/invariants/creditos-no-livro.test.ts` (new)                                                                                                             | —    | —    | yes  | An `ok` priced insert debits once with `delta = -ceil(cost)`; a re-insert of the same key adds nothing; `erro`, null-cost and negative-cost inserts add no row and never fail; balance equals the sum; deleting an `llm_calls` row nulls `llm_call_id` and keeps the debit; deleting the organization succeeds.                                                                                 |
+| `tests/invariants/creditos-no-livro.test.ts` (new)                                                                                                             | —    | —    | yes  | An `ok` priced insert debits once with `delta = -fn_creditos_da_chamada(cost)` (rule per PRD §10 Q1); a re-insert of the same key adds nothing; `erro`, null-cost and negative-cost inserts add no row and never fail; balance equals the sum; deleting an `llm_calls` row nulls `llm_call_id` and keeps the debit; deleting the organization succeeds.                                         |
 | `tests/invariants/resumo-da-chamada-na-timeline.test.ts` (new)                                                                                                 | yes  | —    | —    | One `call_summarized` row (actor `ai`, evidence `llm_call_ids`); a second insert for the same call fails `23505` on the partial index; after the cascade `transcript is null` and the row's `payload = '{}'`; a contact anonymized **before** the block was applied has `transcript is null` after it.                                                                                          |
 | `tests/invariants/ia-move-etapa-e-proximo-passo.test.ts` (new)                                                                                                 | —    | yes  | —    | The recorded conversation writes `stage_id`, `next_step`, `next_step_updated_at`, `stage_changed` and `next_step_set` with actor `ai`; after the cascade `next_step is null` **and** the voice-call transcript is still cleared (catches a bad rebase, §7).                                                                                                                                     |
 
@@ -823,17 +824,17 @@ the `TABLES` and `PARES` edits in the PR body as additive registrations.
 
 ## 10. Decisions this file could not make
 
-| #   | Question                                                                                                                                                                                                                           | Default in this file                                                  |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Q1  | Credit unit: rounding up per call (D3) versus accumulating fractions? Same as `PRD.md` §10 Q1.                                                                                                                                     | Per call, `ceil`, one named constant.                                 |
-| Q2  | Zero-cost call: zero-delta row or no row? Same as `PRD.md` §10 Q2.                                                                                                                                                                 | Pending `PRD.md` §10 Q2 (held for Jaime); no default here.            |
-| Q3  | Should `call_summarized` join the `fn_update_last_activity_at` list (`:24153-24191`)? A SIP call writes no `voice_call` activity, so the summary would be its only trace. Same as `TRD.md` §7 Q3.                                  | Not added in 0443.                                                    |
-| Q4  | Backfill debits for `llm_calls` rows created before 0445? Same as `TRD.md` §7 Q4.                                                                                                                                                  | No backfill.                                                          |
-| Q5  | Clear `messages.media_derived_text` in 0443's cascade redefinition? Same as `TRD.md` §7 Q5.                                                                                                                                        | Not included; known gap.                                              |
-| Q6  | Should the access export include `call_summarized` payloads (the export selects activities without `payload`, `export-collector.ts:917-925`)? A summary is personal data derived from the transcript, which D1 adds to the export. | Included (`TRD.md` §4.2, `IMPLEMENTATION_PLAN.md` T3, PRD CALL-10).   |
-| Q7  | Is the one-time repair in 0443 (§4, item 2) acceptable as part of the regression fix, or does it need a separate decision because it changes stored data on every install?                                                         | Included; it only clears data the contract already says must be gone. |
-| Q8  | Keep the grant reason and actor only in `api_audit_log`, or also on the ledger row?                                                                                                                                                | Audit row only, ledger free of text.                                  |
-| Q9  | `scripts/smoke-llm.ts` seeds and deletes a priced `llm_calls` row; with 0445 the debit stays. Compensate inside the script with an `adjustment`, or document it?                                                                   | Document in the slice 3 PR; the script targets throwaway databases.   |
+| #   | Question                                                                                                                                                                                                                           | Default in this file                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Q1  | Credit unit: rounding up per call (D3) versus accumulating fractions? Same as `PRD.md` §10 Q1.                                                                                                                                     | Pending `PRD.md` §10 Q1 (held for Jaime); §6.2 sketches D3's proposal (per call, ceil). |
+| Q2  | Zero-cost call: zero-delta row or no row? Same as `PRD.md` §10 Q2.                                                                                                                                                                 | Pending `PRD.md` §10 Q2 (held for Jaime); no default here.                              |
+| Q3  | Should `call_summarized` join the `fn_update_last_activity_at` list (`:24153-24191`)? A SIP call writes no `voice_call` activity, so the summary would be its only trace. Same as `TRD.md` §7 Q3.                                  | Not added in 0443.                                                                      |
+| Q4  | Backfill debits for `llm_calls` rows created before 0445? Same as `TRD.md` §7 Q4.                                                                                                                                                  | Pending `PRD.md` §10 Q3 (held for Jaime); no default here.                              |
+| Q5  | Clear `messages.media_derived_text` in 0443's cascade redefinition? Same as `TRD.md` §7 Q5.                                                                                                                                        | Not included; known gap.                                                                |
+| Q6  | Should the access export include `call_summarized` payloads (the export selects activities without `payload`, `export-collector.ts:917-925`)? A summary is personal data derived from the transcript, which D1 adds to the export. | Included (`TRD.md` §4.2, `IMPLEMENTATION_PLAN.md` T3, PRD CALL-10).                     |
+| Q7  | Is the one-time repair in 0443 (§4, item 2) acceptable as part of the regression fix, or does it need a separate decision because it changes stored data on every install?                                                         | Included; it only clears data the contract already says must be gone.                   |
+| Q8  | Keep the grant reason and actor only in `api_audit_log`, or also on the ledger row?                                                                                                                                                | Audit row only, ledger free of text.                                                    |
+| Q9  | `scripts/smoke-llm.ts` seeds and deletes a priced `llm_calls` row; with 0445 the debit stays. Compensate inside the script with an `adjustment`, or document it?                                                                   | Document in the slice 3 PR; the script targets throwaway databases.                     |
 
 ---
 

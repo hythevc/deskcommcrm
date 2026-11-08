@@ -19,7 +19,8 @@ can go stale, §8 gives the command that re-measures it.
 
 ## 1. The decisions this TRD implements
 
-The lane decisions are binding for all six project docs. In short:
+The lane decisions are binding for all six project docs, except the D3 credits-model points held
+for Jaime (PRD §10 Q1–Q5, Q16), which stay pending. In short:
 
 - **D1, slice 1.** The input is the SIP voice agent's `voice_calls.transcript`. A new command event
   `voice_call.summary_requested` is emitted after the transcript write. A registered handler
@@ -35,15 +36,16 @@ The lane decisions are binding for all six project docs. In short:
   to the deal (`crm_leads.next_step`, `crm_leads.next_step_updated_at`, migration 0444), is
   written by the mirror without approval, and gets a `next_step_set` activity. Existing guards stay.
   The approve/dismiss route stays.
-- **D3, slice 3.** 1 credit = 1 US cent of provider cost as recorded in `llm_calls.cost_cents`,
-  fractional cents rounded up per call; the rule is a named constant and a decision still to be
-  confirmed, not a price. Table `credit_ledger` (migration 0445), append-only for PostgREST roles,
+- **D3, slice 3.** D3 proposes 1 credit = 1 US cent of provider cost as recorded in
+  `llm_calls.cost_cents`, fractional cents rounded up per call; the unit is pending PRD §10 Q1 (held
+  for Jaime), not a price. Table `credit_ledger` (migration 0445), append-only for PostgREST roles,
   owner-immutable, RLS SELECT-only. Metering by an `AFTER INSERT` trigger on `llm_calls` for
   `status = 'ok'` and a non-null cost. Unpriced calls are counted and surfaced, never debited as
   zero. Balance via `fn_saldo_de_creditos`. Admin grant route. No enforcement in this slice.
 
-Slices 1 and 3 build things that upstream doctrine says not to build yet
-(`docs/doctrine/operacao-de-agentes.md:117-124`, `docs/specs/19-spec-console-de-agencia.md:35-40`).
+All three slices build Clarify parity before a paying customer asks
+(`docs/doctrine/operacao-de-agentes.md:123-124`), and slice 3 also builds a meter (`:117-118`,
+`docs/specs/19-spec-console-de-agencia.md:35-40`).
 `PRD.md` records that divergence, and that the override is not confirmed while Jaime is away, so
 slices 2 and 3 do not start until it is (PRD status note). This TRD only says how to build them
 safely. Questions marked "pending … (held for Jaime)" follow the PRD §10 rule: no default here.
@@ -585,8 +587,9 @@ the activity rule (§4.12).
 
 ### 5.14 Performance
 
-Per `update_lead_state` call: at most one extra routed `UPDATE` and one activity insert, inside the
-tool call. The stage path is unchanged in cost. No target set here.
+Per `update_lead_state` call: at most one extra routed `UPDATE` inside the tool call, and one
+activity insert per mirror, written after `runModelCall` returns under the §7 Q1 default (inside the
+tool call under the `trace_ids` amendment). The stage path is unchanged in cost. No target set here.
 
 ### 5.15 Test strategy
 
@@ -648,7 +651,7 @@ flowchart TD
   W2["runModelCall failure insert, status erro, cost null"] --> LC
   W3["other llm_calls writers"] --> LC
   LC -->|"AFTER INSERT trigger"| T{"status ok and cost above zero"}
-  T -->|"yes"| D["insert debit_llm_call, delta is minus the rounded-up credits, key from the llm_calls id, on conflict do nothing"]
+  T -->|"yes"| D["insert debit_llm_call, delta per the PRD Q1 unit (held for Jaime), key from the llm_calls id, on conflict do nothing"]
   T -->|"no"| N["no ledger row, null cost counted by the unpriced query"]
   T -.->|"cost exactly zero"| Z["pending PRD Q2, held for Jaime"]
   D --> CL[("credit_ledger")]
@@ -676,8 +679,8 @@ which has no `llm_calls` write (CONFIRMED by search). The proof states these exc
 
 ### 6.6 Conversion rule
 
-- 1 credit = 1 US cent of `llm_calls.cost_cents`. Per call, the debit is a positive cost rounded up
-  to a whole credit (PRD CRED-01). PROPOSED detail of D3. Whether a cost of exactly zero writes a
+- The unit is pending PRD §10 Q1 (held for Jaime); D3 proposes 1 credit = 1 US cent of
+  `llm_calls.cost_cents`, a positive cost rounded up per call (PRD CRED-01). Whether a cost of exactly zero writes a
   zero-delta row or no row is pending PRD §10 Q2 (held for Jaime); this TRD assumes neither.
 - `source_cost_cents` and `source_currency = 'USD'` are stored on each debit, so the rule can be
   re-rated later without losing the source. `llm_calls` has no currency column; USD is stated by
@@ -694,7 +697,8 @@ which has no `llm_calls` write (CONFIRMED by search). The proof states these exc
   `loyalty_ledger` at `baseline.sql:33695-33720`). PROPOSED.
 - Grants: the route reserves the `Idempotency-Key` with `comIdempotencia` and derives the ledger
   key from it, so a replay returns the first receipt and the ledger refuses a duplicate. PROPOSED.
-- No backfill: rows before the migration are not debited (§7 Q4).
+- Backfill is pending PRD §10 Q3 (held for Jaime; §7 Q4); until it is answered, nothing debits rows
+  created before the migration.
 
 ### 6.8 Tenancy
 
@@ -773,7 +777,7 @@ balance per call, revisit with checkpoint rows; not needed for metering.
 
 | Level        | File (new unless marked)                                                                                                                         | What it proves                                                                                                                                                                                                                         |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit         | `lib/creditos/conversao.test.ts`                                                                                                                 | Rounding up per call, null, negative; zero per the answer to PRD §10 Q2 (pending, held for Jaime); equality of the TS and SQL constants.                                                                                               |
+| Unit         | `lib/creditos/conversao.test.ts`                                                                                                                 | Conversion per the PRD §10 Q1 answer (pending, held for Jaime), null, negative; zero per the answer to PRD §10 Q2 (pending, held for Jaime); equality of the TS and SQL constants.                                                     |
 | Unit         | grant route test                                                                                                                                 | Role, support mode, Zod, idempotent replay, audit code.                                                                                                                                                                                |
 | Unit (gates) | existing                                                                                                                                         | `orcamento-uma-regua-de-gasto`, `manifest-x-migrations`, `varredura-anon-e-o-ultimo-bloco`.                                                                                                                                            |
 | DB invariant | `tests/invariants/creditos-no-livro.test.ts` on `pnpm test:db`                                                                                   | An `ok` priced insert debits once; a repeated key adds nothing; `erro` and null-cost inserts add no row and never fail; a negative cost adds no row; the balance equals the sum of deltas; org deletion still cascades.                |
@@ -785,8 +789,9 @@ balance per call, revisit with checkpoint rows; not needed for metering.
 debited exactly once, the ledger cannot be edited through the API, and the balance is computed in
 the database.
 
-**Not proven:** that the conversion rule is the right business rule (it is a decision to confirm);
-spend that never reaches `llm_calls` (§6.5); history before the migration; any blocking behaviour.
+**Not proven:** that the conversion rule is the right business rule (pending PRD §10 Q1, held for
+Jaime); spend that never reaches `llm_calls` (§6.5); history before the migration; any blocking
+behaviour.
 
 ---
 
@@ -797,7 +802,7 @@ spend that never reaches `llm_calls` (§6.5); history before the migration; any 
 | Q1  | Slice 2: D2 asks for `llm_call_ids` evidence, but the turn's own call id does not exist when the tool writes (§5.5). Move both activity writes to after `runModelCall` returns, or amend D2 to accept `trace_ids: [job_id]`? | Without accepted evidence the rows are demoted to `system` and the correction loop stays dead.                   | D2-compatible: both activity rows written after `runModelCall` returns `callId`, evidence `llm_call_ids`. `trace_ids: [job_id]` is a proposed amendment to D2, pending lane authority. |
 | Q2  | Slice 3: should grants need a platform admin (`requirePlatformAdmin`) rather than an organization admin?                                                                                                                     | An organization admin granting credits to their own organization makes a future balance-based limit meaningless. | Organization admin, as D3 says, with audit.                                                                                                                                            |
 | Q3  | Slice 1: should `call_summarized` enter the `fn_update_last_activity_at` allow-list (`baseline.sql:24153-24185`)? SIP calls write no `voice_call` activity today, so the summary would be their only timeline trace.         | Decides whether a summarised call keeps the deal out of the risk radar's "silent" bucket.                        | Not added in 0443.                                                                                                                                                                     |
-| Q4  | Slice 3: backfill debits for `llm_calls` rows created before migration 0445?                                                                                                                                                 | A business decision; it also needs idempotency keys for history.                                                 | No backfill.                                                                                                                                                                           |
+| Q4  | Slice 3: backfill debits for `llm_calls` rows created before migration 0445?                                                                                                                                                 | A business decision; it also needs idempotency keys for history.                                                 | Pending PRD §10 Q3 (held for Jaime); no default.                                                                                                                                       |
 | Q5  | Slice 1: also clear `messages.media_derived_text` in the cascade redefinition of 0443 (voice-note transcripts survive anonymisation today)?                                                                                  | Cheap while the function is being redefined anyway; outside D1's stated scope.                                   | Not included; recorded as a known gap.                                                                                                                                                 |
 
 ---
@@ -873,5 +878,5 @@ select count(*) filter (where cost_cents is null) as unpriced,
   from llm_calls where status = 'ok';
 ```
 
-The slice 3 reconciliation must be bounded to rows created after the migration was applied, since
-history is not backfilled (Q4).
+The slice 3 reconciliation must be bounded to rows created after the migration was applied, unless
+PRD §10 Q3 (held for Jaime) adds a backfill.

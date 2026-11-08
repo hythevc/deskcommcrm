@@ -1,20 +1,21 @@
 # DeskcommCRM — Design brief (call summary, deal next step, credits)
 
-| Field     | Value                                                                                                                                                                                                                                                                                             |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Status    | Draft for review. Docs-only PR from branch `claude/deskcomm-project-docs`.                                                                                                                                                                                                                        |
-| Base      | `main` at `f322ca4` of the fork. Every line number below was read at that commit.                                                                                                                                                                                                                 |
-| Scope     | Four UI surfaces: (A) call summary block in the deal timeline, slice 1; (B) deal next step on the kanban card and in the deal dossier, slice 2; (C) credits balance and ledger history, slice 3, placement and history read pending PRD §10 Q4 (held for Jaime); (D) admin grant dialog, slice 3. |
-| Owns      | Look, copy (exact pt-BR strings), states, motion, accessibility, white-label and i18n rules for those surfaces; how 21st.dev and shadcn patterns are used here.                                                                                                                                   |
-| Does not  | Data flow, routes and guards (in `TRD.md`), DDL (in `BACKEND_SCHEMA.md`), journeys and screen order (in `APP_FLOW.md`), task order (in `IMPLEMENTATION_PLAN.md`), product rationale (in `PRD.md`).                                                                                                |
-| Authority | Design system v1.0 (`docs/design-system/README.md:8`: "a doc vence" over code). This brief cites it and does not restate it. Where the design-system docs and the code differ today, §2 says which one a slice PR follows and why.                                                                |
+| Field     | Value                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status    | Draft for review. Docs-only PR from branch `claude/deskcomm-project-docs`.                                                                                                                                                                                                                                                                                                                               |
+| Base      | `main` at `f322ca4` of the fork. Every line number below was read at that commit.                                                                                                                                                                                                                                                                                                                        |
+| Scope     | Four UI surfaces: (A) call summary block in the deal timeline, slice 1; (B) deal next step on the kanban card and in the deal dossier, slice 2; (C) credits balance and ledger history, slice 3, placement and history read pending PRD §10 Q4 (held for Jaime); (D) admin grant dialog, slice 3.                                                                                                        |
+| Owns      | Look, copy (exact pt-BR strings), states, motion, accessibility, white-label and i18n rules for those surfaces; how 21st.dev and shadcn patterns are used here.                                                                                                                                                                                                                                          |
+| Does not  | Data flow, routes and guards (in `TRD.md`), DDL (in `BACKEND_SCHEMA.md`), journeys and screen order (in `APP_FLOW.md`), task order (in `IMPLEMENTATION_PLAN.md`), product rationale (in `PRD.md`).                                                                                                                                                                                                       |
+| Authority | Design system v1.0 (`docs/design-system/README.md:8`: "a doc vence" over code). This brief cites it and does not restate it. Where the design-system docs and the code differ today, §2 says which one a slice PR follows and why. Whether the design pack or the locked design system v1.0 governs these surfaces is pending PRD §10 Q17 (held for Jaime); until then this brief is drawn against v1.0. |
 
 **Markers.** `CONFIRMED` means the writer opened the cited file at `f322ca4` and read the cited
 lines. `INFERRED` means it follows from code or docs that were read, but nobody rendered it.
 `PROPOSED` marks design that does not exist in the code yet; the slice PRs build it. No business
 number, price or SLA appears here (`AGENTS.md:544-551`). Where a number can go stale, Annex A gives
-the command that re-measures it (CLAUDE.md DoD 16). Lane decisions D1–D3 are binding; where this
-brief needs something they do not settle, §12 asks.
+the command that re-measures it (CLAUDE.md DoD 16). Lane decisions D1–D3 are binding, except the D3
+credits-model points held for Jaime (PRD §10 Q1–Q5, Q16), which stay pending; where this brief
+needs something they do not settle, §12 asks.
 
 ---
 
@@ -45,12 +46,12 @@ flowchart LR
   NS --> B2["B2: dossier next step section"]
   LC["llm_calls"] --> CL["credit_ledger"]
   D["D: grant dialog, admin"] --> CL
-  CL --> C["C: credits card on /app/ai/usage"]
+  CL --> C["C: credits card, placement pending PRD Q4"]
 ```
 
 ---
 
-## 2. Binding rules from design system v1.0, and where the code differs
+## 2. Rules from design system v1.0 (authority pending PRD §10 Q17), and where the code differs
 
 Read `docs/design-system/00-overview.md` to `09-anti-patterns.md` once; the slice PRs follow them.
 This section only adds what those docs cannot know: how each token is spelled in the code today.
@@ -534,7 +535,7 @@ One card (`06-components.md:59-80`, "data" variant: border, no hover), full widt
 ```text
 ┌ Créditos de IA ─────────────────────────────────────────── [Lançar créditos] ┐  ← admin only
 │ Cada uso de IA com custo conhecido debita créditos.                           │
-│ O saldo só mede o uso: nenhuma conversa é bloqueada por ele.                  │
+│ O saldo só mede o uso: nenhuma conversa é bloqueada por ele.                  │  ← gated, §6.4
 │                                                                               │
 │ Saldo                    │ Usos de IA sem custo conhecido                     │  ← <dl>, divider
 │ 1.234 créditos           │ 7                                                  │
@@ -575,8 +576,10 @@ One card (`06-components.md:59-80`, "data" variant: border, no hover), full widt
 
 ### 6.3 Number rules
 
-- Credits are whole numbers (D3). Format with `Intl.NumberFormat(<reader's tag>)`; the tag comes from
-  `useTagDeIdioma` (`hooks/i18n/useLocaleDeData.ts:33`), as dates do
+- Credits render as whole numbers if PRD §10 Q1 (held for Jaime) keeps D3's per-call rounding;
+  until then this rule is drawn for that option only. Format with
+  `Intl.NumberFormat(<reader's tag>)`; the tag comes from `useTagDeIdioma`
+  (`hooks/i18n/useLocaleDeData.ts:33`), as dates do
   (`tests/unit/i18n-a-data-segue-o-idioma.test.ts`).
 - Deltas use `signDisplay: "exceptZero"`, so a debit reads with a minus and a grant with a plus in
   every locale.
@@ -587,39 +590,41 @@ One card (`06-components.md:59-80`, "data" variant: border, no hover), full widt
 
 ### 6.4 States
 
-| State                   | Shows                                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Loading                 | Skeletons only: two blocks in the stat row and three table rows (`components/ui/skeleton.tsx`). Screen-reader text "Carregando créditos." No spinner.                                             |
-| Error                   | One line "Não consegui carregar os créditos. Tente de novo em instantes." and a `ghost` button "Tentar de novo". Never a zero balance: error is not empty (`LeadTimeline.tsx:104-106` precedent). |
-| Empty history           | Balance shows 0 (a real value). Table area: "Nenhum movimento ainda. Os débitos aparecem a partir do próximo uso de IA com custo conhecido."                                                      |
-| Always, under the table | "Usos anteriores à ativação da medição não entram no saldo." (no backfill, PRD §10 Q3 default)                                                                                                    |
-| Negative balance        | §6.2 hint                                                                                                                                                                                         |
-| Unit sentence           | Only after PRD §10 Q1 is confirmed: "Cada crédito corresponde a 1 centavo de dólar do custo registrado do provedor." Until then it is not rendered.                                               |
+| State                 | Shows                                                                                                                                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Loading               | Skeletons only: two blocks in the stat row and three table rows (`components/ui/skeleton.tsx`). Screen-reader text "Carregando créditos." No spinner.                                                                                      |
+| Error                 | One line "Não consegui carregar os créditos. Tente de novo em instantes." and a `ghost` button "Tentar de novo". Never a zero balance: error is not empty (`LeadTimeline.tsx:104-106` precedent).                                          |
+| Empty history         | Balance shows 0 (a real value). Table area: "Nenhum movimento ainda. Os débitos aparecem a partir do próximo uso de IA com custo conhecido."                                                                                               |
+| Under the table       | Only after PRD §10 Q3 (held for Jaime) is answered with no backfill: "Usos anteriores à ativação da medição não entram no saldo." Until then it is not rendered.                                                                           |
+| Negative balance      | §6.2 hint                                                                                                                                                                                                                                  |
+| No-blocking sentences | Only after PRD §10 Q5 (held for Jaime) is answered with no blocking: the second description line and the clause "A IA continua funcionando." Until then the negative-balance hint reads "Saldo negativo: o uso passou do que foi lançado." |
+| Unit sentence         | Only after PRD §10 Q1 (held for Jaime) is confirmed: "Cada crédito corresponde a 1 centavo de dólar do custo registrado do provedor." Until then it is not rendered.                                                                       |
 
 ### 6.5 Copy (exact strings)
 
-| Key (pt-BR, exact)                                                                               | es (proposed)                                                                                 |
-| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `Créditos de IA`                                                                                 | `Créditos de IA`                                                                              |
-| `Cada uso de IA com custo conhecido debita créditos.`                                            | `Cada uso de IA con costo conocido descuenta créditos.`                                       |
-| `O saldo só mede o uso: nenhuma conversa é bloqueada por ele.`                                   | `El saldo solo mide el uso: ninguna conversación se bloquea por él.`                          |
-| `Saldo`                                                                                          | `Saldo`                                                                                       |
-| `crédito` / `créditos`                                                                           | `crédito` / `créditos`                                                                        |
-| `Usos de IA sem custo conhecido`                                                                 | `Usos de IA sin costo conocido`                                                               |
-| `Não debitam créditos. Ficam contados aqui para não sumirem da conta.`                           | `No descuentan créditos. Se cuentan aquí para que no se pierdan.`                             |
-| `Saldo negativo: o uso passou do que foi lançado. A IA continua funcionando.`                    | `Saldo negativo: el uso superó lo registrado. La IA sigue funcionando.`                       |
-| `Histórico`                                                                                      | `Historial`                                                                                   |
-| `Quando` / `Movimento` / `Origem` / `Créditos`                                                   | `Cuándo` / `Movimiento` / `Origen` / `Créditos`                                               |
-| `Uso de IA` (existing key, `lib/i18n/dicionario.ts:3272`)                                        | existing                                                                                      |
-| `Concessão` / `Ajuste`                                                                           | `Concesión` / `Ajuste`                                                                        |
-| `Lançamento manual`                                                                              | `Registro manual`                                                                             |
-| `Mostrar mais`                                                                                   | `Mostrar más`                                                                                 |
-| `Carregando créditos.`                                                                           | `Cargando créditos.`                                                                          |
-| `Não consegui carregar os créditos. Tente de novo em instantes.`                                 | `No pude cargar los créditos. Inténtalo de nuevo en unos instantes.`                          |
-| `Tentar de novo`                                                                                 | `Intentar de nuevo`                                                                           |
-| `Nenhum movimento ainda. Os débitos aparecem a partir do próximo uso de IA com custo conhecido.` | `Aún no hay movimientos. Los débitos aparecen desde el próximo uso de IA con costo conocido.` |
-| `Usos anteriores à ativação da medição não entram no saldo.`                                     | `Los usos anteriores a la activación de la medición no entran en el saldo.`                   |
-| `Cada crédito corresponde a 1 centavo de dólar do custo registrado do provedor.` (gated, §6.4)   | `Cada crédito corresponde a 1 centavo de dólar del costo registrado del proveedor.`           |
+| Key (pt-BR, exact)                                                                                          | es (proposed)                                                                                 |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `Créditos de IA`                                                                                            | `Créditos de IA`                                                                              |
+| `Cada uso de IA com custo conhecido debita créditos.`                                                       | `Cada uso de IA con costo conocido descuenta créditos.`                                       |
+| `O saldo só mede o uso: nenhuma conversa é bloqueada por ele.` (gated, §6.4)                                | `El saldo solo mide el uso: ninguna conversación se bloquea por él.`                          |
+| `Saldo`                                                                                                     | `Saldo`                                                                                       |
+| `crédito` / `créditos`                                                                                      | `crédito` / `créditos`                                                                        |
+| `Usos de IA sem custo conhecido`                                                                            | `Usos de IA sin costo conocido`                                                               |
+| `Não debitam créditos. Ficam contados aqui para não sumirem da conta.`                                      | `No descuentan créditos. Se cuentan aquí para que no se pierdan.`                             |
+| `Saldo negativo: o uso passou do que foi lançado. A IA continua funcionando.` (second sentence gated, §6.4) | `Saldo negativo: el uso superó lo registrado. La IA sigue funcionando.`                       |
+| `Saldo negativo: o uso passou do que foi lançado.` (until §10 Q5 is answered)                               | `Saldo negativo: el uso superó lo registrado.`                                                |
+| `Histórico`                                                                                                 | `Historial`                                                                                   |
+| `Quando` / `Movimento` / `Origem` / `Créditos`                                                              | `Cuándo` / `Movimiento` / `Origen` / `Créditos`                                               |
+| `Uso de IA` (existing key, `lib/i18n/dicionario.ts:3272`)                                                   | existing                                                                                      |
+| `Concessão` / `Ajuste`                                                                                      | `Concesión` / `Ajuste`                                                                        |
+| `Lançamento manual`                                                                                         | `Registro manual`                                                                             |
+| `Mostrar mais`                                                                                              | `Mostrar más`                                                                                 |
+| `Carregando créditos.`                                                                                      | `Cargando créditos.`                                                                          |
+| `Não consegui carregar os créditos. Tente de novo em instantes.`                                            | `No pude cargar los créditos. Inténtalo de nuevo en unos instantes.`                          |
+| `Tentar de novo`                                                                                            | `Intentar de nuevo`                                                                           |
+| `Nenhum movimento ainda. Os débitos aparecem a partir do próximo uso de IA com custo conhecido.`            | `Aún no hay movimientos. Los débitos aparecen desde el próximo uso de IA con costo conocido.` |
+| `Usos anteriores à ativação da medição não entram no saldo.` (gated, §6.4)                                  | `Los usos anteriores a la activación de la medición no entran en el saldo.`                   |
+| `Cada crédito corresponde a 1 centavo de dólar do custo registrado do provedor.` (gated, §6.4)              | `Cada crédito corresponde a 1 centavo de dólar del costo registrado del proveedor.`           |
 
 Why "uso de IA" and not "chamada": in this product "chamada" means a voice call (§4.5), and a ledger
 debit comes from any model call (classifier, checkpoint, summary), not from phone calls. The nav
@@ -806,13 +811,13 @@ match the proposals in §4.5 to §7.4.
 Per surface, behaviour tests query by visible text and role and drive interactions with
 `@testing-library/user-event`. They extend TRD §4.15, §5.15 and §6.16; they do not replace them.
 
-| Surface | Unit (jsdom)                                                                                                                                                                                                                                                                         | Screen (Playwright)                                                            |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| A       | A `call_summarized` row shows "Ver resumo"; clicking shows the summary text and "Resumo (segundo a IA — confira)"; `{}` payload shows the anonymisation line and no toggle; an invalid payload shows the unreadable line; a live arrival does not move focus; the row is not folded. | Open a seeded deal with a fixture summary; expand; axe clean.                  |
-| B1      | `resolveCardState` table: each precedence pair, including `awaiting` over `next_step` and `next_step` over `meter`; the card button opens the dossier and does not select the card.                                                                                                  | Board shows the next step on the card.                                         |
-| B2      | Edit, save, see "Salvo."; Esc cancels and the sheet stays open; the conflict notice appears when the prop changes mid-edit.                                                                                                                                                          | Edit in the dossier, see the `lead_edited` row land without closing the sheet. |
-| C       | Balance and unpriced count render; error is not zero; negative balance shows the hint; deltas carry signs; no currency symbol is present.                                                                                                                                            | Manager sees the card and no grant button.                                     |
-| D       | Double submit sends one key; a replayed receipt reads as success; network failure shows the unknown message and retry reuses the key.                                                                                                                                                | Admin grants once with a double click; one new row appears (TRD §6.16).        |
+| Surface | Unit (jsdom)                                                                                                                                                                                                                                                                         | Screen (Playwright)                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| A       | A `call_summarized` row shows "Ver resumo"; clicking shows the summary text and "Resumo (segundo a IA — confira)"; `{}` payload shows the anonymisation line and no toggle; an invalid payload shows the unreadable line; a live arrival does not move focus; the row is not folded. | Open a seeded deal with a fixture summary; expand; axe clean.                                                                       |
+| B1      | `resolveCardState` table: each precedence pair, including `awaiting` over `next_step` and `next_step` over `meter`; the card button opens the dossier and does not select the card.                                                                                                  | Board shows the next step on the card.                                                                                              |
+| B2      | Edit, save, see "Salvo."; Esc cancels and the sheet stays open; the conflict notice appears when the prop changes mid-edit.                                                                                                                                                          | Edit in the dossier, see the `lead_edited` row land without closing the sheet.                                                      |
+| C       | Balance and unpriced count render; error is not zero; negative balance shows the hint; deltas carry signs; no currency symbol is present.                                                                                                                                            | Pending PRD §10 Q4 (held for Jaime); if a screen is chosen: manager sees the card and no grant button.                              |
+| D       | Double submit sends one key; a replayed receipt reads as success; network failure shows the unknown message and retry reuses the key.                                                                                                                                                | Pending PRD §10 Q4 (held for Jaime); if a screen is chosen: admin grants once with a double click; one new row appears (TRD §6.16). |
 
 Screenshots go under `evidence/<delivery>/` with an index that cites every image, because
 `tests/unit/evidencia-citada.test.ts:237` fails on an uncited image; DoD 12 requires the proof by
@@ -831,7 +836,7 @@ screen on a fresh install.
 | Q5  | May the UI state the credit unit (PRD §10 Q1)?                                                                                                                                                                                                                                                      | Not rendered until Q1 is confirmed.                                                                           | Product owner              |
 | Q6  | The history table needs a paginated read (TRD §6.2 lists only a balance read) and, to show who granted and why, columns D3 does not have. Add a history read route; store reason and author on the ledger or read them from the audit log?                                                          | History read: pending PRD §10 Q4 (held for Jaime). Reason and author: not shown (`BACKEND_SCHEMA.md` §10 Q8). | Product owner; lane for Q8 |
 | Q7  | PRD CRED-12 says "grant or adjustment"; TRD §6.2 leaves the body shape to PRD §10 Q16. The dialog needs the type and, for an adjustment, a direction. Which body shape?                                                                                                                             | Pending PRD §10 Q16 (held for Jaime); no default.                                                             | Product owner              |
-| Q8  | Grants by organization admin (D3) or platform admin (TRD §7 Q2)?                                                                                                                                                                                                                                    | Organization admin on `/app/ai/usage`.                                                                        | Product owner              |
+| Q8  | Grants by organization admin (D3) or platform admin (TRD §7 Q2)?                                                                                                                                                                                                                                    | Organization admin (D3); where the dialog lives follows PRD §10 Q4 (held for Jaime).                          | Product owner              |
 | Q9  | "Confira" works best with the transcript one click away, but `/app/calls` has no per-call link and is manager-only (`catalogo.ts:265-271`). Add a per-call link and show it to managers in the summary block?                                                                                       | No link in slice 1.                                                                                           | Lane                       |
 | Q10 | Language of the generated summary: the organization's language or the call's language?                                                                                                                                                                                                              | Not decided here; the UI renders whatever the payload holds.                                                  | Lane, TRD                  |
 | Q11 | `next_step_set` payload shape, so the row can show the AI's text through a central schema.                                                                                                                                                                                                          | Closed: TRD §5.5 defines the exported schema (`schema_version`, `next_step`, `next_action_seq`).              | Lane, TRD                  |
