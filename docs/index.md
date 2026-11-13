@@ -80,6 +80,7 @@ Detalham schema SQL e payloads exatos. **Consulte antes de modelar qualquer cois
 | [`specs/17`](specs/17-spec-indice-de-atrito.md) | **Índice de Atrito** — medir o propósito (menor atrito p/ os dois lados), não a atividade |
 | [`specs/18`](specs/18-spec-voice-calls-wacalls.md) | Chamada de voz WhatsApp (WaCalls) — rascunho, sem sub-PRD dedicado |
 | [`specs/extensoes-declarativas-v1.md`](specs/extensoes-declarativas-v1.md) | **Extensões declarativas v1** — pacote JSON estrito, catálogo admitido pelo dono da instalação, ativação por organização, guia no hub CRM |
+| [`integracao/webhooks-de-saida.md`](integracao/webhooks-de-saida.md) | Webhook de saída do lado de quem recebe: cabeçalhos, assinatura com carimbo de tempo, id de entrega, exemplos em Node e Python |
 | [`specs/RECONCILIATION-LOG.md`](specs/RECONCILIATION-LOG.md) | Log de reconciliação entre specs |
 
 ## 4. Doutrina e arquitetura
@@ -97,6 +98,8 @@ Detalham schema SQL e payloads exatos. **Consulte antes de modelar qualquer cois
 | [`specs/19`](specs/19-spec-console-de-agencia.md) | **Console de Agência** — operar N organizações clientes; unidade de cobrança decidida (retainer por cliente operado). Lei em [`doctrine/operacao-de-agentes.md`](doctrine/operacao-de-agentes.md) |
 | [`adr/0001-packaging-e-distribuicao.md`](adr/0001-packaging-e-distribuicao.md) | ADR do packaging: namespace, os 3 packages, e o que foi recusado |
 | [`adr/0002-tabelas-de-modulo-num-banco-so.md`](adr/0002-tabelas-de-modulo-num-banco-so.md) | **Aceita em 17/09/2026.** Tabelas de módulo opcional: um banco só, `public`, criadas por função provisionadora fixa quando o módulo é instalado |
+| [`adr/0003-perfil-declarativo-v2-portas-nomeadas-e-vitrine.md`](adr/0003-perfil-declarativo-v2-portas-nomeadas-e-vitrine.md) | **Aceita em 17/09/2026.** Perfil declarativo v2 das extensões: portas nomeadas e o metadado de loja no catálogo |
+| [`adr/0004-cobranca-do-revendedor.md`](adr/0004-cobranca-do-revendedor.md) | **Aceita em 29/09/2026.** Cobrança do revendedor: o terceiro eixo de dinheiro — o dono da instalação cobra as empresas que atende; capacidade do núcleo com chave, desligada por padrão; revisa a condição 2 da ADR-0002 só para este caso |
 | [`architecture/agent-turn.html`](architecture/agent-turn.html) | Diagrama do turno do agente (inbound → guardrails → outbound) |
 | [`specs/pre-go-live-whatsapp.md`](specs/pre-go-live-whatsapp.md) | Modo de teste do WhatsApp por canal: lista de telefones, abertura ao público e compatibilidade com autorização por origem |
 | [`specs/19`](specs/19-spec-console-de-agencia.md) | **Console de Agência** — operar N organizações clientes; unidade de cobrança decidida (retainer por cliente operado). Lei em [`doctrine/operacao-de-agentes.md`](doctrine/operacao-de-agentes.md) |

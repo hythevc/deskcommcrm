@@ -78,8 +78,8 @@ export type MarcaDeSaida = {
 /**
  * O accent do tema CLARO do produto — LIDO da régua, nunca redigitado.
  *
- * `REGUA_DO_PRODUTO.claro.indices.accent` é 6 (`regua-do-produto.ts:175`) e o
- * grau 600 da rampa do produto é `#506d48` (`:34`). Escrever `"#506d48"` aqui
+ * `REGUA_DO_PRODUTO.claro.indices.accent` é 7 (`regua-do-produto.ts`) e o
+ * grau 700 da rampa do produto é `#b9513b`. Escrever `"#b9513b"` aqui
  * criaria a QUARTA cópia do mesmo hex no repositório (as outras vivem em
  * `regua-do-produto.ts`, `app/globals.css` e na rampa derivada), e nada as
  * manteria em sincronia — o dia em que o produto mudar de cor, o botão dos

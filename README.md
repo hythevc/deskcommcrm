@@ -7,7 +7,7 @@
   <img src="docs/brand/deskcomm-logo.svg" alt="Deskcomm CRM" width="420">
 </picture>
 
-# 🛠️ DeskcommCRM — o Sistema Operacional de Vendas com IA, open source, pro WhatsApp
+# 🛠️ Negocai — o Sistema Operacional de Vendas com IA, open source, pro WhatsApp
 
 **Agentes de IA que atendem, qualificam e vendem no WhatsApp — dentro de um CRM open source rodando no seu servidor.**
 **Sem mensalidade, sem feature travada, seus dados com você. A alternativa aberta a Kommo, Octadesk e Intercom.**
@@ -89,6 +89,11 @@ Se faltar Docker, o instalador pergunta e instala sozinho.
 | **Banco** | Conta grátis no [supabase.com](https://supabase.com) — 3 chaves + connection string do **Session pooler** |
 | **IA** | Uma chave de **OpenRouter**, **Anthropic** ou **OpenAI** — o instalador pergunta qual você quer |
 | **WhatsApp** | Seu número, conectado por QR code no onboarding (ou o canal oficial da Meta) |
+
+O instalador também atende VPS ARM64/aarch64, como a Oracle Ampere A1, e escolhe a imagem
+NOWEB oficial do WAHA compatível com essa arquitetura. Vale para os dois caminhos: com Supabase
+externo e com o Supabase na mesma VPS (as imagens do Supabase self-hosted fixadas pelo kit também
+são publicadas para `linux/arm64`). Nada é compilado na VPS.
 
 > 💡 **O Supabase pode ser criado pelo próprio instalador.** Exporte um
 > `SUPABASE_ACCESS_TOKEN` antes de rodar e ele cria o projeto, espera o banco ficar saudável,
@@ -306,7 +311,7 @@ Toda tela tem porta na navegação — o CI reprova tela que existe mas em que s
 | **WhatsApp** | WAHA Plus (engine NOWEB) + Meta Cloud API | QR pra começar rápido; canal oficial pra escala |
 | **Filas** | `event_log` table + workers (cron) | Trigger de banco nunca faz HTTP |
 | **Rate limit** | Upstash Redis (sliding window) | Serverless, free tier suficiente |
-| **AI** | Vercel AI SDK v7 — OpenRouter, Anthropic, OpenAI e Google | Instalador pergunta qual; troca depois pela tela |
+| **AI** | Vercel AI SDK v7 — OpenRouter, Requesty, Anthropic, OpenAI e Google | Instalador pergunta qual; troca depois pela tela |
 | **Validação** | Zod | Input externo, env, payloads |
 | **Observability** | Sentry (scrub em erro, transação, span e breadcrumb) | Telemetria opt-in no install |
 | **Hospedagem** | VPS com Docker (HostGator/SP na parceria) | App + WhatsApp + workers na sua máquina |
@@ -365,7 +370,7 @@ DeskcommCRM/
 │   ├── app/                # Rotas autenticadas: inbox, radar, kanban, contacts,
 │   │                       #   connections, ai/*, integrations, metrics, lgpd,
 │   │                       #   audit, team, settings
-│   └── api/v1/             # API REST canônica (196 route handlers)
+│   └── api/v1/             # API REST canônica
 ├── components/             # React (ui/, inbox/, kanban/, shell/, ...)
 ├── lib/                    # supabase/, waha/, channels/, ai/, agent-engine/,
 │                           #   api/, routing/, navigation/, env.ts

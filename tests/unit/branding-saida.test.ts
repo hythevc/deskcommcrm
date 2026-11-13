@@ -109,8 +109,8 @@ describe("marcaDaSaida — o piso", () => {
     // Controle positivo do item 2 do cabeçalho: se alguém trocar o índice em
     // `saida.ts` por outro grau, a igualdade abaixo continua valendo pelo lado
     // errado — por isso a asserção seguinte prende o ÍNDICE, que é a decisão.
-    expect(REGUA_DO_PRODUTO.claro.indices.accent).toBe(6);
-    expect(ACCENT_DO_PRODUTO).toBe(REGUA_DO_PRODUTO.rampaDoProduto[6]);
+    expect(REGUA_DO_PRODUTO.claro.indices.accent).toBe(7);
+    expect(ACCENT_DO_PRODUTO).toBe(REGUA_DO_PRODUTO.rampaDoProduto[7]);
   });
 
   it("a frente do accent é CALCULADA, nunca branco fixo", async () => {
@@ -134,6 +134,19 @@ describe("marcaDaSaida — as duas classes", () => {
     expect(marca.nome).toBe("Vendas Turbo");
     expect(marca.origens.nome).toBe("banco");
     expect(marca.accent).not.toBe(ACCENT_DO_PRODUTO);
+  });
+
+  it("divergência: nome do BANCO vence o do `.env` quando os dois existem", async () => {
+    // O caso do PR #1944: o onboard configura a marca no banco (Administração ›
+    // Marca) e o `.env` seguiu com o valor da instalação. O resolvedor decide só
+    // por `marcaDaSaida(null)` — banco acima, `.env` como piso.
+    const { marcaDaSaida } = await carregar();
+    linhaDaInstalacao = { app_name: "Marca Configurada na Tela", accent_hex: "#2563eb" };
+    vi.stubEnv("APP_NAME", "Nome Velho do Arquivo");
+
+    const marca = await marcaDaSaida(null);
+    expect(marca.nome).toBe("Marca Configurada na Tela");
+    expect(marca.origens.nome).toBe("banco");
   });
 
   it("classe A (com organização) põe a marca da ORGANIZAÇÃO acima da instalação", async () => {
@@ -191,7 +204,7 @@ describe("marcaDaSaida — NUNCA LANÇA", () => {
     clienteExplode = true;
 
     const marca = await marcaDaSaida("11111111-1111-4111-8111-111111111111");
-    expect(marca.nome).toBe("DeskcommCRM");
+    expect(marca.nome).toBe("Negocai");
     expect(marca.accent).toBe(ACCENT_DO_PRODUTO);
     expect(marca.accentFg).toBe(melhorFrenteSobre(ACCENT_DO_PRODUTO));
   });
@@ -214,7 +227,7 @@ describe("marcaDaSaida — NUNCA LANÇA", () => {
     for (const settings of ["texto", 42, [], { branding: "isto era um objeto" }, null]) {
       respostaDaOrganizacao = { data: { settings }, error: null };
       const marca = await marcaDaSaida("11111111-1111-4111-8111-111111111111");
-      expect(marca.nome).toBe("DeskcommCRM");
+      expect(marca.nome).toBe("Negocai");
     }
   });
 

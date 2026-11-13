@@ -12,7 +12,7 @@ describe("resolveBranding", () => {
     expect(resolveBranding(undefined, undefined)).toEqual({
       name: DEFAULT_APP_NAME,
       logoUrl: null,
-      initial: "D",
+      initial: "N",
     });
   });
 
@@ -131,7 +131,7 @@ describe("nome do arquivo de códigos de recuperação", () => {
   it("deriva o prefixo da marca, sem acento e sem espaço", () => {
     expect(prefixoDoArquivo("Vendas Turbo")).toBe("vendas-turbo");
     expect(prefixoDoArquivo("Ótima Gestão")).toBe("otima-gestao");
-    expect(prefixoDoArquivo(DEFAULT_APP_NAME)).toBe("deskcommcrm");
+    expect(prefixoDoArquivo(DEFAULT_APP_NAME)).toBe("negocai");
   });
 
   it("não devolve hífen pendurado nem repetido", () => {
@@ -225,7 +225,7 @@ const MARCA_CONGELADA: Record<string, EntradaDeMarca> = {
     categoria: "PROTOCOLO",
     motivo:
       "é a guarda do contrato acima: este teste é o que reprova quem renomear o header. Trocar a string aqui para 'limpar a marca' desarmaria a única proteção que o contrato tem",
-    marcas: ["x-deskcomm-event", "x-deskcomm-signature", "x-deskcomm-signature"],
+    marcas: ["x-deskcomm-event", "x-deskcomm-signature", "x-deskcomm-signature", "x-deskcomm-signature"],
   },
   "lib/mcp/server.ts": {
     categoria: "PROTOCOLO",
@@ -322,13 +322,6 @@ const MARCA_CONGELADA: Record<string, EntradaDeMarca> = {
     marcas: ["deskcommcrm", "deskcommcrm", "deskcommcrm"],
   },
 
-  // ─── PADRAO — a marca padrão precisa existir em algum lugar. ───
-  "lib/branding.ts": {
-    categoria: "PADRAO",
-    motivo:
-      "é a DEFINIÇÃO de DEFAULT_APP_NAME — o valor que aparece quando o operador não configurou marca nenhuma. Se esta linha sumir, some o padrão",
-    marcas: ["deskcommcrm"],
-  },
 };
 
 /**
@@ -813,6 +806,12 @@ const HOSTS_DECLARADOS: Record<string, EntradaDeHost> = {
     categoria: "PLATAFORMA",
     motivo:
       "link de mapa que `lib/messaging/localizacao.ts` monta com as coordenadas do pino que o CLIENTE mandou pelo WhatsApp: é o que o atendente toca para ver o endereço de entrega e o que o agente lê. O código não chama o host; o celular abre o app de mapas. Trocar pelo domínio do revendedor não abriria mapa nenhum.",
+  },
+  // ── empresas e pessoas (metade B2B do #1621): consulta de CNPJ ──
+  "brasilapi.com.br": {
+    categoria: "FORNECEDOR",
+    motivo:
+      "endpoint público da BrasilAPI (`lib/brasil-api/client.ts`) que devolve os dados cadastrais de um CNPJ. É o destino do request, só chamado com o módulo de empresas ligado e só para o CNPJ que alguém da organização cadastrou ou importou; trocar pelo domínio do revendedor faria a consulta não chegar a lugar nenhum.",
   },
   // ── prospecção (PR #963): destino de chamada do crawler ──
   "api.apify.com": {

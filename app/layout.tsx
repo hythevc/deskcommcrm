@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { coresDaBarraDoNavegador } from "@/lib/branding/barra-do-navegador";
 import { MarcaDaInstalacaoProvider } from "@/lib/branding/contexto";
 import { cssDaMarca } from "@/lib/branding/css";
+import { iconeDaAba } from "@/lib/branding/icone";
 import {
   marcaDaInstalacao,
   motivoDoFallback,
@@ -83,15 +84,15 @@ async function marcaResolvida(): Promise<{
  * motivo medido.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const { marca } = await marcaResolvida();
+  const { linha, marca } = await marcaResolvida();
   const { name } = marca;
   return {
     title: {
-      default: `${name} — atendimento e vendas por WhatsApp com agentes de IA`,
+      default: `${name} - CRM com IA para WhatsApp`,
       template: `%s · ${name}`,
     },
     description:
-      "Centralize o atendimento por WhatsApp num funil só. Agentes de IA resolvem o que dá pra resolver e passam para o time humano o que importa — com tudo registrado. Multi-tenant, LGPD-nativo, feito para operações brasileiras.",
+      "Negocie mais. Feche no WhatsApp. Centralize o atendimento num funil só: agentes de IA resolvem o que dá pra resolver e passam para o time humano o que importa — com tudo registrado. Multi-tenant, LGPD-nativo, feito para operações brasileiras.",
     applicationName: name,
     authors: [{ name }],
     keywords: ["CRM", "atendimento", "WhatsApp", "IA conversacional", "LGPD", "multi-tenant"],
@@ -102,7 +103,9 @@ export async function generateMetadata(): Promise<Metadata> {
     // `/icon` faz o pedido ir para `app/icon.tsx`, que desenha a marca da
     // instalação em runtime — ver o cabeçalho daquele arquivo para por que ele
     // não pode ser um arquivo estático em `public/`.
-    icons: { icon: "/icon" },
+    // Com um ícone subido em `/admin/marca` (migration 0443), o link aponta para
+    // o arquivo no storage da instalação — ver `iconeDaAba`.
+    icons: { icon: iconeDaAba(linha?.favicon_path) },
   };
 }
 
